@@ -539,10 +539,13 @@ function pinPress(n) {
 
 // Keyboard support for PIN
 document.addEventListener('keydown', function(e) {
-  if(document.getElementById('login-wrap').style.display === 'none') return;
-  if(e.key >= '0' && e.key <= '9') pinPress(parseInt(e.key));
-  else if(e.key === 'Backspace') pinDel();
-  else if(e.key === 'Escape') pinClear();
+  const loginWrap = document.getElementById('login-wrap');
+  if(!loginWrap || loginWrap.style.display === 'none') return;
+  // Only trigger if no button was just clicked
+  if(e.target && e.target.classList.contains('pin-btn')) return;
+  if(e.key >= '0' && e.key <= '9') { e.preventDefault(); pinPress(parseInt(e.key)); }
+  else if(e.key === 'Backspace') { e.preventDefault(); pinDel(); }
+  else if(e.key === 'Escape') { e.preventDefault(); pinClear(); }
 });
 
 function pinDel() {
