@@ -86,10 +86,10 @@ textarea{resize:vertical;min-height:65px}
 .tabs{display:flex;gap:3px;margin-bottom:14px;background:#f1f5f9;border-radius:8px;padding:3px;width:fit-content}
 .tab{padding:5px 14px;border-radius:6px;border:none;background:none;cursor:pointer;font-size:12px;color:#64748b;font-weight:500}
 .tab.active{background:#fff;color:#0f4c81;box-shadow:0 1px 4px rgba(0,0,0,.1)}
-.team-rojo{background:#fee2e2;color:#dc2626}
-.team-azul{background:#dbeafe;color:#1d4ed8}
-.team-verde{background:#dcfce7;color:#15803d}
-.team-amarillo{background:#fef9c3;color:#92400e}
+.team-rojo{background:#EDBFC6;color:#B01018}
+.team-azul{background:#C0D5EA;color:#2A30A0}
+.team-verde{background:#BBE6B6;color:#167A33}
+.team-amarillo{background:#EFEACD;color:#8B7E00}
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .bar-label{width:110px;font-size:13px;color:#475569}
 .bar-track{flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
@@ -440,10 +440,10 @@ const NAV_LABELS = {
 
 // ═══════════════════════ DATOS ═══════════════════════
 const TEAMS = {
-  rojo:     {label:'Los Rojos',    color:'#c53030',bg:'#fff5f5',cls:'team-rojo'},
-  azul:     {label:'Los Azules',   color:'#2b6cb0',bg:'#ebf8ff',cls:'team-azul'},
-  verde:    {label:'Los Verdes',   color:'#276749',bg:'#f0fff4',cls:'team-verde'},
-  amarillo: {label:'Los Amarillos',color:'#b7791f',bg:'#fffff0',cls:'team-amarillo'},
+  rojo:     {label:'Los Rojos',    color:'#B01018',bg:'#EDBFC6',cls:'team-rojo'},
+  azul:     {label:'Los Azules',   color:'#2A30A0',bg:'#C0D5EA',cls:'team-azul'},
+  verde:    {label:'Los Verdes',   color:'#167A33',bg:'#BBE6B6',cls:'team-verde'},
+  amarillo: {label:'Los Amarillos',color:'#8B7E00',bg:'#EFEACD',cls:'team-amarillo'},
 };
 
 let currentUser = null;
@@ -789,10 +789,10 @@ function renderDashboard() {
 
   // Tabla compacta
   const TC = {
-    rojo:     {dk:'#e53e3e',lt:'#fff5f5',td:'#c53030',bd:'#fc8181'},
-    azul:     {dk:'#3182ce',lt:'#ebf8ff',td:'#2b6cb0',bd:'#90cdf4'},
-    verde:    {dk:'#38a169',lt:'#f0fff4',td:'#276749',bd:'#9ae6b4'},
-    amarillo: {dk:'#d69e2e',lt:'#fffff0',td:'#b7791f',bd:'#faf089'},
+    rojo:     {dk:'#ED1C24',lt:'#EDBFC6',td:'#B01018',bd:'#ED1C24'},
+    azul:     {dk:'#3F48CC',lt:'#C0D5EA',td:'#2A30A0',bd:'#3F48CC'},
+    verde:    {dk:'#22B14C',lt:'#BBE6B6',td:'#167A33',bd:'#22B14C'},
+    amarillo: {dk:'#FFF200',lt:'#EFEACD',td:'#8B7E00',bd:'#D4C800'},
   };
   const sorted = [...clients].reverse();
   const rows = sorted.map(c => {
@@ -816,10 +816,10 @@ function renderDashboard() {
 function renderClients() {
   const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
   const TC2 = {
-    rojo:     {dk:'#e53e3e',lt:'#fff5f5',td:'#c53030',bd:'#fc8181'},
-    azul:     {dk:'#3182ce',lt:'#ebf8ff',td:'#2b6cb0',bd:'#90cdf4'},
-    verde:    {dk:'#38a169',lt:'#f0fff4',td:'#276749',bd:'#9ae6b4'},
-    amarillo: {dk:'#d69e2e',lt:'#fffff0',td:'#b7791f',bd:'#faf089'},
+    rojo:     {dk:'#ED1C24',lt:'#EDBFC6',td:'#B01018',bd:'#ED1C24'},
+    azul:     {dk:'#3F48CC',lt:'#C0D5EA',td:'#2A30A0',bd:'#3F48CC'},
+    verde:    {dk:'#22B14C',lt:'#BBE6B6',td:'#167A33',bd:'#22B14C'},
+    amarillo: {dk:'#FFF200',lt:'#EFEACD',td:'#8B7E00',bd:'#D4C800'},
   };
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
     const tc  = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
