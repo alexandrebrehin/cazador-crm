@@ -264,7 +264,7 @@ textarea{resize:vertical;min-height:65px}
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
+        <th style='text-align:center'>Estado</th><th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
         <th>Fecha cita</th><th style='text-align:center'>1er pago</th><th style='text-align:center'>2do pago</th><th style='text-align:center'>3er pago</th><th style='text-align:center'>✅ Ya pagado</th><th>Acciones</th>
       </tr></thead>
       <tbody id="clients-tbody"></tbody>
@@ -370,6 +370,57 @@ textarea{resize:vertical;min-height:65px}
 
 </div><!-- /main -->
 
+<!-- MODAL EDITAR CLIENTE -->
+<div id="modal-edit-cliente" class="modal-bg" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Editar cliente</div>
+      <button class="btn-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="form-grid g3" style="margin-bottom:10px">
+      <div><label>Nombre *</label><input id="ec-name"></div>
+      <div><label>Teléfono *</label><input id="ec-phone"></div>
+      <div><label>Torre / Dirección</label><input id="ec-tower"></div>
+    </div>
+    <div class="form-grid g3" style="margin-bottom:10px">
+      <div><label>Equipo *</label>
+        <select id="ec-team">
+          <option value="rojo">Los Rojos</option>
+          <option value="azul">Los Azules</option>
+          <option value="verde">Los Verdes</option>
+          <option value="amarillo">Los Amarillos</option>
+        </select>
+      </div>
+      <div><label>Fecha de cita</label><input type="date" id="ec-date"></div>
+      <div><label>Hora</label><input type="time" id="ec-time"></div>
+    </div>
+    <div class="form-grid g2" style="margin-bottom:10px">
+      <div><label>Notas</label><textarea id="ec-notes" style="min-height:50px"></textarea></div>
+      <div><label>💧 Fugas detectadas</label><input type="number" id="ec-fugas" min="0"></div>
+    </div>
+    <div class="form-grid g3" style="margin-bottom:10px">
+      <div><label>1er pago (RD$)</label><input type="number" id="ec-pago1" min="0"></div>
+      <div><label>2do pago (RD$)</label><input type="number" id="ec-pago2" min="0"></div>
+      <div><label>3er pago (RD$)</label><input type="number" id="ec-pago3" min="0"></div>
+    </div>
+    <div class="form-grid g2" style="margin-bottom:14px">
+      <div><label>Estado</label>
+        <select id="ec-status">
+          <option value="pendiente">Pendiente</option>
+          <option value="pagado">Pagado / Terminado</option>
+          <option value="debe">Debe saldo</option>
+          <option value="disputa">En disputa</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveEditCliente()">✅ Guardar cambios</button>
+      <button class="btn btn-danger" onclick="addToBlacklist()">🚫 Agregar a Blacklist</button>
+      <button class="btn" onclick="closeEditModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ACCIONES MOBILE -->
 <div id="modal-acciones-mobile" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeMobileModal()">
   <div style="background:#fff;border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:500px">
@@ -443,7 +494,7 @@ const TEAMS = {
   rojo:     {label:'Los Rojos',    color:'#B01018',bg:'#EDBFC6',cls:'team-rojo'},
   azul:     {label:'Los Azules',   color:'#2A30A0',bg:'#C0D5EA',cls:'team-azul'},
   verde:    {label:'Los Verdes',   color:'#167A33',bg:'#BBE6B6',cls:'team-verde'},
-  amarillo: {label:'Los Amarillos',color:'#8B7E00',bg:'#EFEACD',cls:'team-amarillo'},
+  amarillo: {label:'Los Amarillos',color:'#7A6800',bg:'#EFEACD',cls:'team-amarillo'},
 };
 
 let currentUser = null;
@@ -792,7 +843,7 @@ function renderDashboard() {
     rojo:     {dk:'#ED1C24',lt:'#EDBFC6',td:'#B01018',bd:'#ED1C24'},
     azul:     {dk:'#3F48CC',lt:'#C0D5EA',td:'#2A30A0',bd:'#3F48CC'},
     verde:    {dk:'#22B14C',lt:'#BBE6B6',td:'#167A33',bd:'#22B14C'},
-    amarillo: {dk:'#FFF200',lt:'#EFEACD',td:'#8B7E00',bd:'#D4C800'},
+    amarillo: {dk:'#F0C000',lt:'#EFEACD',td:'#7A6800',bd:'#C8A800'},
   };
   const sorted = [...clients].reverse();
   const rows = sorted.map(c => {
@@ -819,7 +870,7 @@ function renderClients() {
     rojo:     {dk:'#ED1C24',lt:'#EDBFC6',td:'#B01018',bd:'#ED1C24'},
     azul:     {dk:'#3F48CC',lt:'#C0D5EA',td:'#2A30A0',bd:'#3F48CC'},
     verde:    {dk:'#22B14C',lt:'#BBE6B6',td:'#167A33',bd:'#22B14C'},
-    amarillo: {dk:'#FFF200',lt:'#EFEACD',td:'#8B7E00',bd:'#D4C800'},
+    amarillo: {dk:'#F0C000',lt:'#EFEACD',td:'#7A6800',bd:'#C8A800'},
   };
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
     const tc  = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
@@ -837,8 +888,12 @@ function renderClients() {
         +';background:rgba(255,255,255,0.25);color:'+col+';font-size:12px;text-align:center"'
         +' onchange="updatePagoEl(this)" onclick="event.stopPropagation()">';
     };
-    const row = '<tr style="background:'+bg+';cursor:pointer" onclick="if(!openMobileModal(\'' +c.id+ '\'))selectClient(\'' +c.id+ '\')">'
-      +'<td style="'+s+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td>'
+    const toggleBtn = fin
+      ? '<button onclick="event.stopPropagation();toggleStatus(\''+c.id+'\',\'pendiente\')" style="padding:2px 8px;border-radius:20px;background:#22B14C;border:none;color:#fff;font-size:10px;cursor:pointer;white-space:nowrap">✅ Terminado</button>'
+      : '<button onclick="event.stopPropagation();toggleStatus(\''+c.id+'\',\'pagado\')" style="padding:2px 8px;border-radius:20px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.4);color:'+col+';font-size:10px;cursor:pointer;white-space:nowrap">🔄 En curso</button>';
+    const row = '<tr style="background:'+bg+'">'
+      +'<td style="'+s+';text-align:center;white-space:nowrap">'+toggleBtn+'</td>'
+      +'<td style="'+s+';font-weight:600;color:'+col+';cursor:pointer;white-space:nowrap" onclick="event.stopPropagation();openEditModal(\''+c.id+'\')" title="Editar cliente">✏️ '+c.name+'</td>'
       +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.phone+'</td>'
       +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.tower+'</td>'
       +'<td style="'+s+'">'+teamBadge(c.team)+'</td>'
@@ -1274,6 +1329,69 @@ function eliminarCliente() {
 }
 
 let _mobileClientId = null;
+let _editClientId = null;
+
+function openEditModal(clientId) {
+  const c = clients.find(cl=>cl.id===clientId);
+  if(!c) return;
+  _editClientId = clientId;
+  document.getElementById('ec-name').value   = c.name||'';
+  document.getElementById('ec-phone').value  = c.phone||'';
+  document.getElementById('ec-tower').value  = c.tower||'';
+  document.getElementById('ec-team').value   = c.team||'rojo';
+  document.getElementById('ec-date').value   = c.date||'';
+  document.getElementById('ec-time').value   = c.time||'09:00';
+  document.getElementById('ec-notes').value  = c.notes||'';
+  document.getElementById('ec-fugas').value  = c.fugas||0;
+  document.getElementById('ec-pago1').value  = c.pago1||0;
+  document.getElementById('ec-pago2').value  = c.pago2||0;
+  document.getElementById('ec-pago3').value  = c.pago3||0;
+  document.getElementById('ec-status').value = c.status||'pendiente';
+  document.getElementById('modal-edit-cliente').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit-cliente').style.display = 'none';
+  _editClientId = null;
+}
+
+function saveEditCliente() {
+  if(!_editClientId) return;
+  const c = clients.find(cl=>cl.id===_editClientId);
+  if(!c) return;
+  c.name   = document.getElementById('ec-name').value.trim();
+  c.phone  = document.getElementById('ec-phone').value.trim();
+  c.tower  = document.getElementById('ec-tower').value.trim();
+  c.team   = document.getElementById('ec-team').value;
+  c.date   = document.getElementById('ec-date').value;
+  c.time   = document.getElementById('ec-time').value;
+  c.notes  = document.getElementById('ec-notes').value;
+  c.fugas  = Number(document.getElementById('ec-fugas').value)||0;
+  c.pago1  = Number(document.getElementById('ec-pago1').value)||0;
+  c.pago2  = Number(document.getElementById('ec-pago2').value)||0;
+  c.pago3  = Number(document.getElementById('ec-pago3').value)||0;
+  c.status = document.getElementById('ec-status').value;
+  syncAll(); renderClients(); renderDashboard();
+  showToast('✅ Cliente actualizado');
+  closeEditModal();
+}
+
+function addToBlacklist() {
+  if(!_editClientId) return;
+  const c = clients.find(cl=>cl.id===_editClientId);
+  if(!c) return;
+  if(confirm('¿Agregar a ' + c.name + ' a la Blacklist?')) {
+    blacklist.unshift({
+      id:'bl'+Date.now(), name:c.name, phone:c.phone, tower:c.tower,
+      amount:(c.pago1||0)+(c.pago2||0)+(c.pago3||0),
+      reason:'En disputa', date:new Date().toISOString().slice(0,10)
+    });
+    c.status = 'disputa';
+    syncAll(); renderClients(); renderDashboard(); renderBL();
+    showToast('🚫 '+c.name+' agregado a Blacklist');
+    closeEditModal();
+  }
+}
 
 function eliminarClienteMobile() {
   if(!_mobileClientId) return;
