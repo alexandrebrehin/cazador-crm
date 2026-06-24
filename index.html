@@ -37,7 +37,7 @@ body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a
 .kpi.danger .val{color:#dc2626}
 .kpi.warning .val{color:#d97706}
 .table-wrap{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow-x:auto}
-table{width:100%;min-width:600px;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
 th{background:#f8fafc;text-align:left;padding:9px 10px;color:#64748b;border-bottom:1px solid #e2e8f0;font-weight:500;font-size:12px}
 td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 tr:last-child td{border-bottom:none}
@@ -359,6 +359,19 @@ textarea{resize:vertical;min-height:65px}
 </div>
 
 </div><!-- /main -->
+
+<!-- MODAL ACCIONES MOBILE -->
+<div id="modal-acciones-mobile" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeMobileModal()">
+  <div style="background:#fff;border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:500px">
+    <div style="font-weight:600;font-size:15px;color:#0f4c81;margin-bottom:16px" id="mobile-modal-title">Acciones</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a id="mobile-btn-yerald" href="#" target="_blank" style="padding:14px;border-radius:10px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:15px;font-weight:600;text-decoration:none;text-align:center">👷 Agregar Yerald</a>
+      <a id="mobile-btn-alex" href="#" target="_blank" style="padding:14px;border-radius:10px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:15px;font-weight:600;text-decoration:none;text-align:center">👔 Agregar Alexandre</a>
+      <a href="https://drive.google.com/drive/folders/1O5Muv0YYJZqptMY6KWvoldTfI-S6OWF4" target="_blank" style="padding:14px;border-radius:10px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:15px;font-weight:600;text-decoration:none;text-align:center">📁 Fotos de la obra</a>
+      <button onclick="closeMobileModal()" style="padding:12px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:14px;cursor:pointer;color:#64748b">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL DOCUMENTO -->
 <div id="modal-doc" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
@@ -781,7 +794,7 @@ function renderClients() {
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
     const d = daysUntil(c.date);
     const late = !c.paid8k && d<=2 && d>=0;
-    return `<tr style="cursor:pointer" onclick="selectClient('${c.id}')">
+    return `<tr style="cursor:pointer" onclick="if(!openMobileModal('${c.id}'))selectClient('${c.id}')">
       <td style="font-weight:600">${c.name}${late?' <span class="badge badge-yellow" style="font-size:10px">⏰</span>':''}</td>
       <td>${c.phone}</td>
       <td style="font-size:12px;color:#64748b">${c.tower}</td>
@@ -1199,6 +1212,23 @@ function updateEquipo() {
     else if(e.id===aId){ if(e.team!==team) e.history.push(team); e.team=team; e.role='ayudante'; }
   });
   showToast('✅ Equipo actualizado'); toggleForm('form-equipo'); renderEmpleados();
+}
+
+// ═══════════════════════ MODAL MOBILE ═══════════════════════
+function openMobileModal(clientId) {
+  if(window.innerWidth > 768) return false; // Solo en mobile
+  const c = clients.find(cl=>cl.id===clientId);
+  if(!c) return false;
+  document.getElementById('mobile-modal-title').textContent = '📋 ' + c.name;
+  document.getElementById('mobile-btn-yerald').href = gcalUrl(c,'yerald');
+  document.getElementById('mobile-btn-alex').href = gcalUrl(c,'alex');
+  const modal = document.getElementById('modal-acciones-mobile');
+  modal.style.display = 'flex';
+  return true;
+}
+
+function closeMobileModal() {
+  document.getElementById('modal-acciones-mobile').style.display = 'none';
 }
 
 // ═══════════════════════ MICRÓFONO ═══════════════════════
