@@ -1,1 +1,1240 @@
-x
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cazador de Fugas — CRM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:#1a1a1a;background:#f0f4f8;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#0f4c81;color:#fff;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sidebar.collapsed{transform:translateX(-220px)}
+.main{margin-left:220px;min-height:100vh;padding:20px;transition:margin .3s}
+.main.full{margin-left:0}
+.menu-toggle{display:none;position:fixed;top:10px;left:10px;z-index:200;background:#0f4c81;border:none;color:#fff;font-size:22px;padding:6px 10px;border-radius:8px;cursor:pointer}
+@media(max-width:768px){
+  .menu-toggle{display:block}
+  .sidebar{transform:translateX(-220px)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:12px;padding-top:50px}
+}
+.sidebar-logo{padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;gap:10px}
+.sidebar-logo img{width:40px;height:40px;object-fit:contain}
+.sidebar-logo .empresa{font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;line-height:1.3}
+.sidebar-logo .tagline{font-size:9px;color:rgba(255,255,255,0.6);margin-top:1px}
+.sidebar nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,0.75);border:none;background:none;width:100%;text-align:left;cursor:pointer;font-size:13px;transition:background .15s;text-decoration:none}
+.nav-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-btn.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:500}
+.nav-btn .icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.15);font-size:11px;color:rgba(255,255,255,0.5)}
+.main{margin-left:220px;min-height:100vh;padding:20px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:17px;font-weight:600;margin-bottom:16px;color:#0f4c81}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:#fff;border-radius:10px;padding:14px;border:1px solid #e2e8f0}
+.kpi .lbl{font-size:11px;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.kpi .val{font-size:20px;font-weight:700;color:#0f4c81}
+.kpi .sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.kpi.danger .val{color:#dc2626}
+.kpi.warning .val{color:#d97706}
+.table-wrap{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;text-align:left;padding:9px 10px;color:#64748b;border-bottom:1px solid #e2e8f0;font-weight:500;font-size:12px}
+td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-green{background:#dcfce7;color:#15803d}
+.badge-red{background:#fee2e2;color:#dc2626}
+.badge-yellow{background:#fef9c3;color:#92400e}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-gray{background:#f1f5f9;color:#475569}
+.badge-orange{background:#ffedd5;color:#9a3412}
+.alert-box{border-radius:8px;border:1px solid;padding:10px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.alert-d{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+.alert-w{background:#fef9c3;border-color:#fde047;color:#78350f}
+.alert-i{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+.alert-s{background:#dcfce7;border-color:#86efac;color:#166534}
+.card-form{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px;margin-bottom:14px}
+.form-grid{display:grid;gap:10px;margin-bottom:12px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+label{font-size:12px;color:#64748b;display:block;margin-bottom:3px;font-weight:500}
+input,select,textarea{width:100%;padding:7px 10px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#1a1a1a;font-size:13px;font-family:inherit;outline:none;transition:border .15s}
+input:focus,select:focus{border-color:#0f4c81;box-shadow:0 0 0 3px rgba(15,76,129,0.1)}
+textarea{resize:vertical;min-height:65px}
+.btn{padding:7px 14px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:500;transition:all .15s}
+.btn:hover{background:#f8fafc}
+.btn-primary{background:#0f4c81;border-color:#0f4c81;color:#fff}
+.btn-primary:hover{background:#0d4070}
+.btn-danger{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+.btn-success{background:#dcfce7;border-color:#86efac;color:#15803d}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-group{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{font-size:14px;font-weight:600;color:#334155}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:999}
+.modal{background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-title{font-size:15px;font-weight:600;color:#0f4c81}
+.btn-close{background:none;border:none;cursor:pointer;font-size:20px;color:#94a3b8}
+.doc-preview{background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;padding:18px;font-size:13px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #0f4c81}
+.doc-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.doc-row:last-child{border-bottom:none}
+.doc-row .k{color:#64748b}
+.doc-row .v{font-weight:500}
+.doc-clausula{margin-top:12px;padding:10px;background:#fff8e1;border-radius:6px;border:1px solid #fde047;font-size:11px;color:#78350f;line-height:1.6}
+.tabs{display:flex;gap:3px;margin-bottom:14px;background:#f1f5f9;border-radius:8px;padding:3px;width:fit-content}
+.tab{padding:5px 14px;border-radius:6px;border:none;background:none;cursor:pointer;font-size:12px;color:#64748b;font-weight:500}
+.tab.active{background:#fff;color:#0f4c81;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.team-rojo{background:#fee2e2;color:#dc2626}
+.team-azul{background:#dbeafe;color:#1d4ed8}
+.team-verde{background:#dcfce7;color:#15803d}
+.team-amarillo{background:#fef9c3;color:#92400e}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-label{width:110px;font-size:13px;color:#475569}
+.bar-track{flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-size:13px;font-weight:500;min-width:90px;text-align:right;color:#0f4c81}
+.team-stat-card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:14px;margin-bottom:10px}
+.tasa-good{color:#15803d;font-weight:600}
+.tasa-mid{color:#d97706;font-weight:600}
+.tasa-bad{color:#dc2626;font-weight:600}
+#toast{position:fixed;top:18px;right:18px;z-index:9999;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:500;display:none;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+@media(max-width:768px){
+  table{font-size:12px}
+  td,th{padding:6px 6px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .form-grid.g3{grid-template-columns:1fr}
+  .form-grid.g2{grid-template-columns:1fr}
+  .btn-group{flex-wrap:wrap}
+  .modal{width:95vw;padding:16px}
+  .page-title{font-size:15px}
+}
+
+/* LOGIN */
+.login-wrap{position:fixed;inset:0;background:linear-gradient(135deg,#0f4c81,#1e40af);display:flex;align-items:center;justify-content:center;z-index:9000}
+.login-box{background:#fff;border-radius:16px;padding:36px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.login-logo{width:80px;margin:0 auto 16px}
+.login-title{font-size:18px;font-weight:700;color:#0f4c81;margin-bottom:4px}
+.login-sub{font-size:12px;color:#64748b;margin-bottom:24px}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.pin-btn{padding:14px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;color:#0f4c81}
+.pin-btn:hover{background:#dbeafe;border-color:#93c5fd}
+.pin-display{font-size:28px;letter-spacing:12px;height:44px;display:flex;align-items:center;justify-content:center;color:#0f4c81;margin-bottom:8px}
+.pin-error{color:#dc2626;font-size:13px;margin-top:8px;min-height:20px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-wrap" class="login-wrap">
+  <div class="login-box">
+    <div style="font-size:48px;margin-bottom:8px">💧</div>
+    <div class="login-title">Cazador de Fugas</div>
+    <div class="login-sub">Ingresa tu código PIN para continuar</div>
+    <div class="pin-display" id="pin-display">_ _ _ _</div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pinPress(1)">1</button>
+      <button class="pin-btn" onclick="pinPress(2)">2</button>
+      <button class="pin-btn" onclick="pinPress(3)">3</button>
+      <button class="pin-btn" onclick="pinPress(4)">4</button>
+      <button class="pin-btn" onclick="pinPress(5)">5</button>
+      <button class="pin-btn" onclick="pinPress(6)">6</button>
+      <button class="pin-btn" onclick="pinPress(7)">7</button>
+      <button class="pin-btn" onclick="pinPress(8)">8</button>
+      <button class="pin-btn" onclick="pinPress(9)">9</button>
+      <button class="pin-btn" onclick="pinClear()" style="font-size:13px;color:#dc2626">✕</button>
+      <button class="pin-btn" onclick="pinPress(0)">0</button>
+      <button class="pin-btn" onclick="pinDel()" style="font-size:16px">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <label style="display:flex;align-items:center;gap:6px;justify-content:center;margin-top:10px;font-size:12px;color:#64748b;cursor:pointer">
+      <input type="checkbox" id="remember-me" style="width:14px;height:14px"> Recordarme 30 días
+    </label>
+  </div>
+</div>
+
+<!-- HAMBURGER BUTTON -->
+<button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar" style="display:none">
+  <div class="sidebar-logo">
+    <div style="font-size:28px">💧</div>
+    <div>
+      <div class="empresa">CAZADOR DE FUGAS</div>
+      <div class="tagline">detectamos · demostramos · reparamos</div>
+    </div>
+  </div>
+  <nav id="sidebar-nav"></nav>
+  <div class="sidebar-footer" id="sidebar-footer"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MAIN -->
+<div class="main" id="main-content" style="display:none">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page active">
+  <div class="page-title">📊 Dashboard</div>
+  <div class="kpis" id="kpi-area"></div>
+  <div class="section-header"><div class="section-title">🔔 Alertas activas</div></div>
+  <div id="dash-alerts" style="margin-bottom:16px"></div>
+  <div class="section-header"><div class="section-title">📋 Todos los clientes — del más reciente al más antiguo</div></div>
+  <div id="dash-clients"></div>
+</div>
+
+<!-- CLIENTES -->
+<div id="clientes" class="page">
+  <div class="page-title">👤 Clientes</div>
+  <div class="card-form" style="margin-bottom:14px">
+    <div class="section-title" style="margin-bottom:10px">🔍 Verificar antes de agendar</div>
+    <div class="form-grid g3">
+      <div><label>Nombre completo</label><input id="s-name" placeholder="José Martínez García" oninput="checkBL()"></div>
+      <div><label>Teléfono completo</label><input id="s-phone" placeholder="8095550142" oninput="checkBL()"></div>
+      <div><label>Torre / Residencia exacta</label><input id="s-tower" placeholder="Torre Mirador" oninput="checkBL()"></div>
+    </div>
+    <div id="bl-result"></div>
+  </div>
+
+  <div id="panel-acciones" style="display:none;background:#EFF6FF;border:1px solid #93C5FD;border-radius:10px;padding:12px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-weight:600;color:#1e40af;font-size:13px" id="nombre-seleccionado">—</span>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-sm" onclick="crearDoc('cotizacion')">📋 Cotización</button>
+        <button class="btn btn-success btn-sm" onclick="crearDoc('factura')">🧾 Factura</button>
+        <button class="btn btn-sm" style="background:#F3E8FF;border-color:#C084FC;color:#7E22CE" onclick="crearDoc('recibo')">💳 Recibo</button>
+        <button class="btn btn-sm" style="background:#FFF7ED;border-color:#FED7AA;color:#c2410c" onclick="marcarDisputa()">⚠️ En disputa</button>
+        <button class="btn btn-success btn-sm" onclick="marcarPagado()">✅ Pagado</button>
+        <button class="btn btn-sm" onclick="deselect()">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Clientes activos</div>
+    <button class="btn btn-primary" onclick="toggleForm('form-cliente')">+ Nuevo cliente</button>
+  </div>
+
+  <div id="form-cliente" class="card-form" style="display:none">
+    <div style="font-weight:600;margin-bottom:12px;color:#0f4c81">Agregar nuevo cliente</div>
+    <div class="form-grid g3">
+      <div><label>Nombre *</label><input id="nc-name"></div>
+      <div><label>Teléfono *</label><input id="nc-phone"></div>
+      <div><label>Torre / Dirección</label><input id="nc-tower"></div>
+    </div>
+    <div class="form-grid g3">
+      <div><label>Equipo *</label>
+        <select id="nc-team">
+          <option value="rojo">Los Rojos</option>
+          <option value="azul">Los Azules</option>
+          <option value="verde">Los Verdes</option>
+          <option value="amarillo">Los Amarillos</option>
+        </select>
+      </div>
+      <div><label>Fecha de cita *</label><input type="date" id="nc-date"></div>
+      <div><label>Hora</label><input type="time" id="nc-time" value="09:00"></div>
+    </div>
+    <div class="form-grid g2">
+      <div><label>Descripción del problema</label><textarea id="nc-notes" placeholder="Fuga en baño principal..."></textarea></div>
+      <div><label>💧 N° fugas/filtraciones detectadas</label><input type="number" id="nc-fugas" value="0" min="0"></div>
+    </div>
+    <div class="alert-box alert-i" style="margin-bottom:10px"><span>📅</span><span>Al guardar, se crea la cita en Google Calendario y un presupuesto de RD$ 23,000.</span></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveClient()">✅ Guardar y generar cita</button>
+      <button class="btn" onclick="toggleForm('form-cliente')">Cancelar</button>
+      <a id="gcal-btn-equipo" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #86efac;background:#dcfce7;color:#15803d;font-size:12px;font-weight:600;text-decoration:none">📅 Cita equipo</a>
+      <a id="gcal-btn-yerald" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #C084FC;background:#F3E8FF;color:#7E22CE;font-size:12px;font-weight:600;text-decoration:none">👷 +Yerald</a>
+      <a id="gcal-btn-alex" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #7DD3FC;background:#E0F2FE;color:#0369A1;font-size:12px;font-weight:600;text-decoration:none">👔 +Alexandre</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
+        <th>Fecha cita</th><th>Adelanto</th><th>Estado</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="clients-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AGENDA -->
+<div id="agenda" class="page">
+  <div class="page-title">📅 Agenda</div>
+  <div class="alert-box alert-i" style="margin-bottom:14px"><span>📅</span><span>Las citas se sincronizan con Google Calendario al crear un cliente.</span></div>
+  <div id="agenda-list"></div>
+</div>
+
+<!-- BLACKLIST -->
+<div id="blacklist" class="page">
+  <div class="page-title">🚫 Blacklist</div>
+  <div class="alert-box alert-w" style="margin-bottom:14px"><span>⚠️</span>
+    <div>El sistema verifica <strong>teléfono completo, nombre completo y torre exacta</strong> al crear un cliente. Sin accents — "José" = "Jose".</div>
+  </div>
+  <div class="section-header">
+    <div class="section-title">Registros — <span id="bl-count">0</span></div>
+    <button class="btn btn-danger" onclick="toggleForm('form-bl')">+ Agregar</button>
+  </div>
+  <div id="form-bl" class="card-form" style="display:none;border-color:#fca5a5">
+    <div class="form-grid g3">
+      <div><label>Nombre completo</label><input id="bl-name"></div>
+      <div><label>Teléfono</label><input id="bl-phone"></div>
+      <div><label>Torre / Residencia</label><input id="bl-tower"></div>
+      <div><label>Monto adeudado (RD$)</label><input type="number" id="bl-amount"></div>
+      <div style="grid-column:span 2"><label>Motivo</label><input id="bl-reason" placeholder="Negó pago al terminar"></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-danger" onclick="saveBL()">🚫 Agregar</button>
+      <button class="btn" onclick="toggleForm('form-bl')">Cancelar</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nombre</th><th>Teléfono</th><th>Torre</th><th>Debe</th><th>Motivo</th><th>Fecha</th></tr></thead>
+      <tbody id="bl-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ESTADÍSTICAS -->
+<div id="estadisticas" class="page">
+  <div class="page-title">📈 Estadísticas</div>
+  <div class="kpis" id="stats-kpis"></div>
+  <div class="section-title" style="margin-bottom:10px">Desempeño por equipo</div>
+  <div id="stats-teams"></div>
+  <div style="margin-top:20px">
+    <div class="section-title" style="margin-bottom:10px">🤖 Consultar con IA</div>
+    <div class="card-form">
+      <div class="form-grid" style="grid-template-columns:1fr auto">
+        <div style="position:relative;flex:1">
+          <textarea id="ai-stats-q" placeholder="Pregunta con voz 🎤 o escribe... Ej: ¿Cuál equipo facturó más este mes?" style="width:100%;min-height:50px;padding:8px 40px 8px 8px;border-radius:7px;border:1px solid #cbd5e1;font-size:13px;font-family:inherit"></textarea>
+          <button onclick="startMic('ai-stats-q')" style="position:absolute;right:6px;top:6px;background:none;border:none;cursor:pointer;font-size:20px" title="Hablar">🎤</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-self:flex-end">
+          <button class="btn btn-primary" onclick="askAIStats()">🤖 Consultar</button>
+          <span id="mic-status-stats" style="font-size:11px;color:#64748b;text-align:center"></span>
+        </div>
+      </div>
+      <div id="ai-stats-r" style="display:none;margin-top:10px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #93c5fd;font-size:13px;line-height:1.6;color:#1e40af;white-space:pre-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLEADOS -->
+<div id="empleados" class="page">
+  <div class="page-title">👷 Empleados & Performance</div>
+  <div class="kpis" id="emp-kpis"></div>
+  <div class="section-title" style="margin:16px 0 10px">🏆 Ranking individual</div>
+  <div id="emp-ranking"></div>
+  <div class="section-header" style="margin-top:16px">
+    <div class="section-title">👥 Equipos actuales</div>
+    <button class="btn btn-primary" onclick="toggleForm('form-equipo')">✏️ Modificar equipo</button>
+  </div>
+  <div id="form-equipo" class="card-form" style="display:none">
+    <div class="form-grid g3">
+      <div><label>Equipo</label>
+        <select id="ee-team">
+          <option value="rojo">Los Rojos</option><option value="azul">Los Azules</option>
+          <option value="verde">Los Verdes</option><option value="amarillo">Los Amarillos</option>
+        </select>
+      </div>
+      <div><label>Nuevo Jefe</label><select id="ee-jefe"></select></div>
+      <div><label>Nuevo Ayudante</label><select id="ee-ayudante"></select></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="updateEquipo()">✅ Guardar</button>
+      <button class="btn" onclick="toggleForm('form-equipo')">Cancelar</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Equipo</th><th>Jefe</th><th>Ayudante</th><th>Obras</th><th>Tasa cobro</th></tr></thead>
+      <tbody id="emp-equipos-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- MODAL DOCUMENTO -->
+<div id="modal-doc" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Documento</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════ CONFIGURACIÓN ═══════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby75f5D8k9djNks2MMcbvt5_U63AXAeL_z_mZZCVKZuNDXJZrVcjTfT2qn5UkMDFP0Y/exec';
+const DRIVE_FOLDER_ID = '1O5Muv0YYJZqptMY6KWvoldTfI-S6OWF4';
+const GCAL = {
+  rojo:     '02bffa46219f87c68574f5ca19c938b6d687af704915e860fa321fe2f1fa48d2@group.calendar.google.com',
+  azul:     'f4fbcf0e595f93daa90a784e2528f14522294b5429481ec50c1c263f74372f1a@group.calendar.google.com',
+  verde:    '91972e79ae1eba912d9958a6a0c08564e9ed61a6ac5ad22c488f8633eed3a845@group.calendar.google.com',
+  amarillo: 'fd05a14ece2cfa82b6a955a19e39e81d0d7b42194e04081d416d0601ed3defbe@group.calendar.google.com',
+  yerald:   'a5926881664b37b293bbc45dccf78786e857c25d2a79a8eed554c51d4c2e6f03@group.calendar.google.com',
+  alex:     '2627547fbe1073e3b033415a2521e979851ff1047eeea2d1a1c3f82e718c0046@group.calendar.google.com',
+};
+
+// ═══════════════════════ USUARIOS ═══════════════════════
+const USERS = [
+  {id:'alex',    name:'Alexandre', pin:'1234', role:'admin',     team:null},
+  {id:'dir',     name:'Dirbelys',  pin:'5678', role:'secretaria',team:null},
+  {id:'yerald',  name:'Yerald',    pin:'9999', role:'supervisor', team:null},
+  {id:'yoel',    name:'Yoel',      pin:'1111', role:'jefe',       team:'azul'},
+  {id:'starlin', name:'Starlin',   pin:'2222', role:'jefe',       team:'rojo'},
+  {id:'tio',     name:'Tío',       pin:'3333', role:'jefe',       team:'amarillo'},
+  {id:'alomar',  name:'Alomar',    pin:'4444', role:'jefe',       team:'verde'},
+];
+
+// NAV POR ROL
+const NAV_CONFIG = {
+  admin:      ['dashboard','clientes','agenda','blacklist','estadisticas','empleados','ubicaciones'],
+  secretaria: ['clientes','agenda','blacklist'],
+  supervisor: ['agenda','clientes','ubicaciones'],
+  jefe:       ['agenda','mis-clientes'],
+};
+
+const NAV_LABELS = {
+  dashboard:    ['📊','Dashboard'],
+  clientes:     ['👤','Clientes'],
+  agenda:       ['📅','Agenda'],
+  blacklist:    ['🚫','Blacklist'],
+  estadisticas: ['📈','Estadísticas'],
+  empleados:    ['👷','Empleados'],
+  ubicaciones:  ['📍','Ver ubicaciones'],
+  'mis-clientes':['👤','Mis clientes'],
+};
+
+// ═══════════════════════ DATOS ═══════════════════════
+const TEAMS = {
+  rojo:     {label:'Los Rojos',    color:'#dc2626',bg:'#fee2e2',cls:'team-rojo'},
+  azul:     {label:'Los Azules',   color:'#1d4ed8',bg:'#dbeafe',cls:'team-azul'},
+  verde:    {label:'Los Verdes',   color:'#15803d',bg:'#dcfce7',cls:'team-verde'},
+  amarillo: {label:'Los Amarillos',color:'#92400e',bg:'#fef9c3',cls:'team-amarillo'},
+};
+
+let currentUser = null;
+let selectedClientId = null;
+let pinBuffer = '';
+
+let clients = [
+  {id:'c1',name:'Ana Rodríguez',phone:'8294410021',tower:'Apt 3C, Naco',team:'rojo',date:'2025-06-25',time:'09:00',notes:'Fuga cocina',fugas:1,paid8k:true,paidFull:true,status:'pagado'},
+  {id:'c2',name:'Carlos Méndez',phone:'8093127788',tower:'Torre Piantini B2',team:'azul',date:'2025-06-27',time:'10:00',notes:'Humedad pared',fugas:0,paid8k:false,paidFull:false,status:'pendiente'},
+  {id:'c3',name:'Luis Guerrero',phone:'8492205511',tower:'Urb. Real Apt 7',team:'verde',date:'2025-06-24',time:'08:30',notes:'Fuga baño',fugas:2,paid8k:true,paidFull:false,status:'debe'},
+  {id:'c4',name:'María Santos',phone:'8091234567',tower:'Res. La Esperanza',team:'amarillo',date:'2025-06-29',time:'11:00',notes:'Filtración terraza',fugas:0,paid8k:false,paidFull:false,status:'pendiente'},
+];
+
+let invoices = [
+  {id:'f047',client:'Ana Rodríguez',team:'rojo',type:'factura',amount:23000,paid:23000,date:'2025-06-20',status:'pagada',signed:true,waSent:true,desc:'Detección y reparación fuga grieta'},
+  {id:'f046',client:'Carlos Méndez',team:'azul',type:'cotizacion',amount:23000,paid:8000,date:'2025-06-19',status:'parcial',signed:false,waSent:true,desc:'Detección fuga filtración pared'},
+  {id:'f045',client:'Luis Guerrero',team:'verde',type:'recibo',amount:8000,paid:8000,date:'2025-06-18',status:'pagada',signed:true,waSent:true,desc:'Recibo adelanto'},
+  {id:'f044',client:'María Santos',team:'amarillo',type:'cotizacion',amount:23000,paid:0,date:'2025-06-17',status:'pendiente',signed:false,waSent:false,desc:'Detección fuga terraza'},
+];
+
+let blacklist = [
+  {id:'bl1',name:'Pedro Martínez',phone:'8095550142',tower:'Torre Mirador',amount:8500,reason:'Negó pago al terminar',date:'2025-03-10'},
+  {id:'bl2',name:'José Vargas',phone:'8491003322',tower:'Res. Bella Vista',amount:5200,reason:'Cheque rechazado',date:'2025-01-15'},
+];
+
+let empleados = [
+  {id:'e1',name:'Yoel',   role:'jefe',     team:'azul',     history:['azul'],     obras:12,cobradas:11},
+  {id:'e2',name:'Yoan',   role:'ayudante', team:'azul',     history:['azul'],     obras:12,cobradas:10},
+  {id:'e3',name:'Starlin',role:'jefe',     team:'rojo',     history:['rojo'],     obras:14,cobradas:13},
+  {id:'e4',name:'Cristian',role:'ayudante',team:'rojo',     history:['rojo'],     obras:14,cobradas:12},
+  {id:'e5',name:'Tío',    role:'jefe',     team:'amarillo', history:['amarillo'], obras:10,cobradas:8},
+  {id:'e6',name:'Fulano', role:'ayudante', team:'amarillo', history:['amarillo'], obras:10,cobradas:7},
+  {id:'e7',name:'Alomar', role:'jefe',     team:'verde',    history:['verde'],    obras:11,cobradas:10},
+  {id:'e8',name:'Sonny',  role:'ayudante', team:'verde',    history:['verde'],    obras:11,cobradas:9},
+  {id:'e9',name:'Yerald', role:'supervisor',team:'todos',   history:['todos'],    obras:47,cobradas:43},
+];
+
+// ═══════════════════════ UTILIDADES ═══════════════════════
+const fmt = n => 'RD$ ' + Number(n).toLocaleString('es-DO');
+const daysUntil = d => Math.ceil((new Date(d) - new Date()) / 86400000);
+
+// Normalizar sin acentos y sin espacios (para blacklist)
+function normalize(s) {
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\s\-\.]/g,'');
+}
+
+function teamBadge(id) {
+  const t = TEAMS[id]; if(!t) return '';
+  return `<span class="badge ${t.cls}">${t.label}</span>`;
+}
+
+function statusBadge(s) {
+  const m = {
+    pagado:   ['badge-green','Pagado'],
+    pagada:   ['badge-green','Pagada'],
+    parcial:  ['badge-yellow','Adelanto OK'],
+    pendiente:['badge-blue','Pendiente'],
+    debe:     ['badge-red','Debe saldo'],
+    disputa:  ['badge-orange','En disputa'],
+  };
+  const r = m[s] || ['badge-gray',s];
+  return `<span class="badge ${r[0]}">${r[1]}</span>`;
+}
+
+function showToast(msg, type='s') {
+  const el = document.getElementById('toast');
+  const st = {
+    s:{bg:'#dcfce7',b:'#86efac',c:'#15803d'},
+    d:{bg:'#fee2e2',b:'#fca5a5',c:'#991b1b'},
+    w:{bg:'#fef9c3',b:'#fde047',c:'#78350f'}
+  }[type] || {bg:'#dcfce7',b:'#86efac',c:'#15803d'};
+  el.style.cssText = `display:block;background:${st.bg};border:1px solid ${st.b};color:${st.c}`;
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display='none', 3500);
+}
+
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+// ═══════════════════════ LOGIN ═══════════════════════
+function pinPress(n) {
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDisplay();
+  if(pinBuffer.length === 4) setTimeout(checkPin, 200);
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDisplay();
+}
+
+function pinClear() {
+  pinBuffer = '';
+  updatePinDisplay();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDisplay() {
+  const dots = pinBuffer.split('').map(()=>'●').join(' ');
+  const blanks = Array(4-pinBuffer.length).fill('_').join(' ');
+  document.getElementById('pin-display').textContent = (dots + (dots&&blanks?' ':'')+blanks).trim();
+}
+
+function checkPin() {
+  const user = USERS.find(u => u.pin === pinBuffer);
+  if(user) {
+    currentUser = user;
+    const remember = document.getElementById('remember-me').checked;
+    if(remember) {
+      localStorage.setItem('crm_user', user.id);
+      localStorage.setItem('crm_exp', Date.now() + 30*24*3600*1000);
+    }
+    loginSuccess();
+  } else {
+    document.getElementById('pin-error').textContent = 'Código incorrecto. Inténtalo de nuevo.';
+    pinBuffer = '';
+    updatePinDisplay();
+  }
+}
+
+function loginSuccess() {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('main-content').style.display = 'block';
+  document.getElementById('menu-toggle').style.display = window.innerWidth <= 768 ? 'block' : 'none';
+  buildNav();
+  document.getElementById('sidebar-footer').innerHTML = `👤 ${currentUser.name} &nbsp;|&nbsp; ${currentUser.role}<br>Cazador de Fugas S.R.L.`;
+  initFromSheets();
+}
+
+function buildNav() {
+  const pages = NAV_CONFIG[currentUser.role] || ['agenda'];
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = pages.map(p => {
+    if(p === 'ubicaciones') return `<a href="https://maps.google.com" target="_blank" class="nav-btn"><span class="icon">${NAV_LABELS[p][0]}</span> ${NAV_LABELS[p][1]}</a>`;
+    return `<button class="nav-btn ${p==='dashboard'?'active':''}" onclick="nav('${p}',this)"><span class="icon">${NAV_LABELS[p][0]}</span> ${NAV_LABELS[p][1]}</button>`;
+  }).join('');
+}
+
+// Logout
+function logout() {
+  localStorage.removeItem('crm_user');
+  localStorage.removeItem('crm_exp');
+  currentUser = null;
+  location.reload();
+}
+
+// Check remembered session
+function checkSession() {
+  const uid = localStorage.getItem('crm_user');
+  const exp = localStorage.getItem('crm_exp');
+  if(uid && exp && Date.now() < Number(exp)) {
+    const user = USERS.find(u => u.id === uid);
+    if(user) { currentUser = user; loginSuccess(); return; }
+  }
+  document.getElementById('login-wrap').style.display = 'flex';
+}
+
+// ═══════════════════════ NAVEGACIÓN ═══════════════════════
+function nav(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const pg = document.getElementById(id === 'mis-clientes' ? 'clientes' : id);
+  if(pg) pg.classList.add('active');
+  if(btn) btn.classList.add('active');
+  renderPage(id);
+  // Close sidebar on mobile after navigation
+  if(window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('open');
+}
+
+function renderPage(id) {
+  const fn = {
+    dashboard: renderDashboard,
+    clientes: renderClients,
+    'mis-clientes': renderMisClientes,
+    agenda: renderAgenda,
+    blacklist: renderBL,
+    estadisticas: renderStats,
+    empleados: renderEmpleados,
+  };
+  if(fn[id]) fn[id]();
+}
+
+// ═══════════════════════ GOOGLE SHEETS ═══════════════════════
+async function saveToSheets(sheetName, data) {
+  try {
+    const rows = data.map(item => Object.values(item));
+    await fetch(SCRIPT_URL + '?action=overwrite&sheet=' + sheetName + '&rows=' + encodeURIComponent(JSON.stringify(rows)), {mode:'no-cors'});
+  } catch(e) { console.log('Sheets sync:', e); }
+}
+
+async function loadFromSheets(sheetName) {
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=read&sheet=' + sheetName);
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+async function syncAll() {
+  await saveToSheets('Clientes', clients.map(c=>([c.id,c.name,c.phone,c.tower,c.team,c.date,c.time||'',c.notes||'',c.fugas||0,c.paid8k?'SI':'NO',c.paidFull?'SI':'NO',c.status])));
+  await saveToSheets('Facturas', invoices.map(i=>([i.id,i.client,i.team,i.type,i.amount,i.paid,i.date,i.status,i.signed?'SI':'NO',i.waSent?'SI':'NO',i.desc||''])));
+  await saveToSheets('Blacklist', blacklist.map(b=>([b.id,b.name||'',b.phone||'',b.tower||'',b.amount||0,b.reason||'',b.date])));
+}
+
+function initFromSheets() {
+  renderDashboard();
+  setTimeout(async () => {
+    try {
+      const cls = await Promise.race([loadFromSheets('Clientes'), new Promise(r=>setTimeout(r,8000))]);
+      if(cls && cls.length > 1) {
+        const loaded = cls.slice(1).filter(r=>r[0]).map(r=>({
+          id:r[0],name:r[1],phone:r[2],tower:r[3],team:r[4],
+          date:r[5],time:r[6]||'09:00',notes:r[7]||'',fugas:Number(r[8])||0,
+          paid8k:r[9]==='SI',paidFull:r[10]==='SI',status:r[11]||'pendiente'
+        }));
+        if(loaded.length) clients = loaded;
+      }
+      const invs = await Promise.race([loadFromSheets('Facturas'), new Promise(r=>setTimeout(r,8000))]);
+      if(invs && invs.length > 1) {
+        const loaded = invs.slice(1).filter(r=>r[0]).map(r=>({
+          id:r[0],client:r[1],team:r[2],type:r[3],
+          amount:Number(r[4])||0,paid:Number(r[5])||0,date:r[6],status:r[7],
+          signed:r[8]==='SI',waSent:r[9]==='SI',desc:r[10]||''
+        }));
+        if(loaded.length) invoices = loaded;
+      }
+      const bls = await Promise.race([loadFromSheets('Blacklist'), new Promise(r=>setTimeout(r,8000))]);
+      if(bls && bls.length > 1) {
+        const loaded = bls.slice(1).filter(r=>r[0]).map(r=>({
+          id:r[0],name:r[1]||'',phone:r[2]||'',tower:r[3]||'',
+          amount:Number(r[4])||0,reason:r[5]||'',date:r[6]||''
+        }));
+        if(loaded.length) blacklist = loaded;
+      }
+      renderDashboard();
+      renderClients();
+      showToast('✅ Datos sincronizados');
+    } catch(e) { console.log('Sheets bg error:', e); }
+  }, 200);
+}
+
+// ═══════════════════════ BLACKLIST CHECK ═══════════════════════
+function checkBL() {
+  const name  = document.getElementById('s-name').value.trim();
+  const phone = document.getElementById('s-phone').value.trim();
+  const tower = document.getElementById('s-tower').value.trim();
+  const el = document.getElementById('bl-result');
+  if(!name && !phone && !tower) { el.innerHTML=''; return; }
+
+  const hits = [];
+  blacklist.forEach(b => {
+    const m = [];
+    // Teléfono: exacto completo
+    if(phone && b.phone && normalize(b.phone) === normalize(phone)) m.push('teléfono exacto');
+    // Nombre: exacto completo (sin acentos)
+    if(name && b.name && normalize(b.name) === normalize(name)) m.push('nombre completo');
+    // Torre: exacta (sin acentos)
+    if(tower && b.tower && normalize(b.tower) === normalize(tower)) m.push('torre exacta');
+    if(m.length) hits.push({...b, matches:m});
+  });
+
+  if(hits.length) {
+    el.innerHTML = hits.map(h => `
+      <div class="alert-box alert-d" style="margin-top:8px">
+        <span style="font-size:16px">🚫</span>
+        <div><strong>¡BLACKLIST!</strong> Coincide por <strong>${h.matches.join(', ')}</strong> con <strong>${h.name||'—'}</strong><br>
+        Debe: ${fmt(h.amount||0)} · Motivo: ${h.reason||'—'}</div>
+      </div>`).join('');
+  } else {
+    el.innerHTML = `<div class="alert-box alert-s" style="margin-top:8px"><span>✅</span><span>Sin coincidencias. Puedes continuar.</span></div>`;
+  }
+}
+
+// ═══════════════════════ DASHBOARD ═══════════════════════
+function renderDashboard() {
+  const totalCA = invoices.filter(i=>i.status==='pagada').reduce((a,i)=>a+i.amount,0);
+  const totalDebe = clients.filter(c=>c.status==='debe').reduce((a,c)=>{
+    return a + invoices.filter(i=>i.client===c.name).reduce((s,i)=>s+(i.amount-i.paid),0);
+  },0);
+  const totalDisputa = clients.filter(c=>c.status==='disputa').reduce((a,c)=>{
+    return a + invoices.filter(i=>i.client===c.name).reduce((s,i)=>s+(i.amount-i.paid),0);
+  },0);
+  const sinAd = clients.filter(c=>!c.paid8k && daysUntil(c.date)<=2 && daysUntil(c.date)>=0).length;
+
+  // KPIs según rol
+  const isAdmin = currentUser?.role === 'admin';
+  const kpis = [];
+  if(isAdmin) kpis.push({l:'CA cobrado (mes)',v:fmt(totalCA),s:'obras pagadas',cls:''});
+  kpis.push({l:'Clientes totales',v:clients.length,s:'registrados',cls:''});
+  kpis.push({l:'🔴 Impagos (cobrables)',v:fmt(totalDebe),s:'clientes que deben',cls:totalDebe>0?'danger':''});
+  if(isAdmin) kpis.push({l:'⚠️ En disputa',v:fmt(totalDisputa),s:'probablemente perdido',cls:totalDisputa>0?'warning':''});
+  kpis.push({l:'Adelantos urgentes',v:sinAd,s:'vencen en ≤2 días',cls:sinAd>0?'warning':''});
+
+  document.getElementById('kpi-area').innerHTML = kpis.map(k=>
+    `<div class="kpi ${k.cls}"><div class="lbl">${k.l}</div><div class="val">${k.v}</div><div class="sub">${k.s}</div></div>`
+  ).join('');
+
+  const alerts = [];
+  clients.forEach(c => {
+    const d = daysUntil(c.date);
+    if(!c.paid8k && d<=2 && d>=0)
+      alerts.push(`<div class="alert-box alert-w"><span>⏰</span><div><strong>${c.name}</strong> — le queda <strong>${d===0?'hoy':d+'d'}</strong> para pagar el adelanto de ${fmt(8000)}</div></div>`);
+    if(c.status==='debe')
+      alerts.push(`<div class="alert-box alert-d"><span>🔴</span><div><strong>${c.name}</strong> — debe ${fmt(15000)} · recordatorio cada 2 días</div></div>`);
+  });
+  document.getElementById('dash-alerts').innerHTML = alerts.length ? alerts.join('') : `<div class="alert-box alert-s"><span>✅</span><span>Sin alertas pendientes.</span></div>`;
+
+  // Tabla compacta
+  const TC = {
+    rojo:     {dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},
+    azul:     {dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},
+    verde:    {dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},
+    amarillo: {dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'},
+  };
+  const sorted = [...clients].reverse();
+  const rows = sorted.map(c => {
+    const tc = TC[c.team] || {dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
+    const fin = c.paidFull || c.status==='pagado';
+    const dis = c.status==='disputa';
+    const bg  = dis ? '#FFF7ED' : fin ? tc.lt : tc.dk;
+    const col = dis ? '#92400e' : fin ? tc.td : '#fff';
+    const sub = dis ? '#92400e99' : fin ? tc.td+'99' : 'rgba(255,255,255,0.72)';
+    const bd  = dis ? '#FDE68A' : tc.bd;
+    const p   = t => '<span style="background:rgba(0,0,0,0.12);padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;color:'+col+'">'+t+'</span>';
+    const saldo = c.paidFull ? p('✅ RD$15,000') : dis ? p('⚠️ Disputa') : c.status==='debe' ? p('🔴 Debe') : p('⏳ Pendiente');
+    const estado = dis ? p('⚠️ En disputa') : fin ? p('✅ Terminado') : p('🔄 En curso');
+    return '<tr style="background:'+bg+'"><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.tower||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.phone||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center;font-weight:700;color:'+col+'">'+(c.fugas||0)+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+p(c.paid8k?'✅ RD$8,000':'⏳ Pendiente')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+saldo+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+estado+'</td></tr>';
+  }).join('');
+
+  document.getElementById('dash-clients').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Torre</th><th>Teléfono</th><th style="text-align:center">💧 Fugas</th><th style="text-align:center">Adelanto</th><th style="text-align:center">Saldo</th><th style="text-align:center">Estado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+// ═══════════════════════ CLIENTES ═══════════════════════
+function renderClients() {
+  const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
+  document.getElementById('clients-tbody').innerHTML = list.map(c => {
+    const d = daysUntil(c.date);
+    const late = !c.paid8k && d<=2 && d>=0;
+    return `<tr style="cursor:pointer" onclick="selectClient('${c.id}')">
+      <td style="font-weight:600">${c.name}${late?' <span class="badge badge-yellow" style="font-size:10px">⏰</span>':''}</td>
+      <td>${c.phone}</td>
+      <td style="font-size:12px;color:#64748b">${c.tower}</td>
+      <td>${teamBadge(c.team)}</td>
+      <td style="font-size:12px">${c.date} ${c.time||''}</td>
+      <td>${c.paid8k?'<span class="badge badge-green">✅</span>':'<span class="badge badge-yellow">⏳</span>'}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <a href="${gcalUrl(c,'yerald')}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">👷</a>
+          <a href="${gcalUrl(c,'alex')}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">👔</a>
+          <a href="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">📁</a>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMisClientes() {
+  // Para jefes de equipo
+  const list = clients.filter(c=>c.team===currentUser?.team);
+  document.getElementById('clients-tbody').innerHTML = list.map(c => `
+    <tr>
+      <td style="font-weight:600">${c.name}</td>
+      <td>${c.phone}</td>
+      <td style="font-size:12px;color:#64748b">${c.tower}</td>
+      <td>${c.date}</td>
+      <td><a href="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}" target="_blank" class="btn btn-sm" style="background:#FEF9C3;border-color:#FDE047;color:#854D0E">📁 Fotos</a></td>
+    </tr>`).join('');
+}
+
+function selectClient(id) {
+  selectedClientId = id;
+  const c = clients.find(cl=>cl.id===id);
+  if(!c) return;
+  document.getElementById('panel-acciones').style.display = 'block';
+  document.getElementById('nombre-seleccionado').textContent = '👤 '+c.name+' · '+(TEAMS[c.team]?.label||c.team)+' · '+(c.tower||'');
+}
+
+function deselect() {
+  selectedClientId = null;
+  document.getElementById('panel-acciones').style.display = 'none';
+}
+
+function marcarDisputa() {
+  if(!selectedClientId) return;
+  const c = clients.find(cl=>cl.id===selectedClientId);
+  if(!c) return;
+  if(confirm('¿Marcar a '+c.name+' como "En disputa"?\nNo entrará en el KPI de impagos cobrables.')) {
+    c.status = 'disputa';
+    syncAll(); renderClients(); renderDashboard();
+    showToast('⚠️ '+c.name+' marcado como En disputa');
+    deselect();
+  }
+}
+
+function marcarPagado() {
+  if(!selectedClientId) return;
+  const c = clients.find(cl=>cl.id===selectedClientId);
+  if(!c) return;
+  c.paid8k=true; c.paidFull=true; c.status='pagado';
+  invoices.filter(i=>i.client===c.name).forEach(i=>{ i.status='pagada'; i.paid=i.amount; });
+  syncAll(); renderClients(); renderDashboard();
+  showToast('✅ '+c.name+' marcado como pagado'); deselect();
+}
+
+function crearDoc(tipo) {
+  if(!selectedClientId) return;
+  const c = clients.find(cl=>cl.id===selectedClientId);
+  if(!c) return;
+  const newInv = {
+    id:'f'+Date.now(), client:c.name, team:c.team, type:tipo,
+    amount: tipo==='recibo' ? 8000 : 23000,
+    paid: tipo==='recibo' ? 8000 : 0,
+    date: new Date().toISOString().slice(0,10),
+    status: tipo==='recibo' ? 'pagada' : 'pendiente',
+    signed:false, waSent:false,
+    desc:'Detección y reparación de fuga — '+(c.tower||'')
+  };
+  invoices.unshift(newInv);
+  syncAll();
+  openDocModal(newInv.id);
+}
+
+function saveClient() {
+  const name  = document.getElementById('nc-name').value.trim();
+  const phone = document.getElementById('nc-phone').value.trim();
+  const date  = document.getElementById('nc-date').value;
+  const team  = document.getElementById('nc-team').value;
+  if(!name||!phone||!date) { showToast('Completa los campos obligatorios','d'); return; }
+
+  // BL check exacto
+  const hit = blacklist.find(b =>
+    (phone && b.phone && normalize(b.phone)===normalize(phone)) ||
+    (name  && b.name  && normalize(b.name)===normalize(name))
+  );
+  if(hit) { showToast('🚫 Coincidencia con Blacklist — revisa antes de continuar','d'); return; }
+
+  const tower = document.getElementById('nc-tower').value;
+  const time  = document.getElementById('nc-time').value || '09:00';
+  const notes = document.getElementById('nc-notes').value;
+  const fugas = Number(document.getElementById('nc-fugas').value)||0;
+
+  const newC = {id:'c'+Date.now(),name,phone,tower,team,date,time,notes,fugas,paid8k:false,paidFull:false,status:'pendiente'};
+  clients.unshift(newC);
+  invoices.unshift({id:'f'+Date.now(),client:name,team,type:'cotizacion',amount:23000,paid:0,date:new Date().toISOString().slice(0,10),status:'pendiente',signed:false,waSent:false,desc:notes||'Detección y reparación de fuga'});
+
+  // Google Calendar
+  const gs = date.replace(/-/g,'')+'T'+time.replace(':','')+'00';
+  const ge = date.replace(/-/g,'')+'T'+String(Number(time.split(':')[0])+2).padStart(2,'0')+time.split(':')[1]+'00';
+  const det = 'Cliente: '+name+'\nTelefono: '+phone+'\nTorre: '+tower+'\nEquipo: '+(TEAMS[team]?.label||team)+'\nProblema: '+notes+'\n\n📁 Fotos: https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'\n\nAdelanto: RD$ 8,000 | Saldo: RD$ 15,000';
+  const base = 'https://calendar.google.com/calendar/u/1/render?action=TEMPLATE&text='+encodeURIComponent('Cazador de Fugas - '+name+' ('+(TEAMS[team]?.label||team)+')')+'&dates='+gs+'/'+ge+'&details='+encodeURIComponent(det)+'&location='+encodeURIComponent(tower);
+
+  const btnE = document.getElementById('gcal-btn-equipo');
+  const btnY = document.getElementById('gcal-btn-yerald');
+  const btnA = document.getElementById('gcal-btn-alex');
+  btnE.href = base + (GCAL[team] ? '&src='+encodeURIComponent(GCAL[team])+'&ctz=America/Santo_Domingo' : '');
+  btnY.href = base + '&src='+encodeURIComponent(GCAL.yerald)+'&ctz=America/Santo_Domingo';
+  btnA.href = base + '&src='+encodeURIComponent(GCAL.alex)+'&ctz=America/Santo_Domingo';
+  btnE.style.display = btnY.style.display = btnA.style.display = 'inline-flex';
+
+  syncAll(); renderClients(); renderDashboard();
+  showToast('✅ Cliente guardado · Haz clic en los botones de calendario');
+}
+
+// ═══════════════════════ GOOGLE CALENDAR HELPER ═══════════════════════
+function gcalUrl(c, who) {
+  const gs = (c.date||'').replace(/-/g,'')+'T'+(c.time||'0900').replace(':','')+'00';
+  const ge = (c.date||'').replace(/-/g,'')+'T'+String(Number((c.time||'09:00').split(':')[0])+2).padStart(2,'0')+(c.time||'09:00').split(':')[1]+'00';
+  const base = 'https://calendar.google.com/calendar/u/1/render?action=TEMPLATE&text='+encodeURIComponent('Cazador de Fugas - '+c.name)+'&dates='+gs+'/'+ge+'&location='+encodeURIComponent(c.tower||'');
+  return base + '&src='+encodeURIComponent(GCAL[who]||'')+'&ctz=America/Santo_Domingo';
+}
+
+// ═══════════════════════ AGENDA ═══════════════════════
+function renderAgenda() {
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
+  const sorted = [...list].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('agenda-list').innerHTML = sorted.map(c => {
+    const d = daysUntil(c.date);
+    const dt = new Date(c.date);
+    const t = TEAMS[c.team];
+    const badges = [];
+    if(!c.paid8k && d<=2 && d>=0) badges.push('<span class="badge badge-yellow">⏰ Adelanto '+d+'d</span>');
+    if(!c.paid8k && d<0) badges.push('<span class="badge badge-red">🔴 Adelanto vencido</span>');
+    if(c.paid8k && !c.paidFull) badges.push('<span class="badge badge-green">✅ Adelanto OK</span>');
+    if(c.paidFull) badges.push('<span class="badge badge-green">✅ Pagado</span>');
+    badges.push(teamBadge(c.team));
+    return `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9">
+      <div style="width:48px;text-align:center;background:${t?.bg||'#dbeafe'};border-radius:8px;padding:6px 0;flex-shrink:0">
+        <div style="font-size:18px;font-weight:700;color:${t?.color||'#0f4c81'}">${dt.getDate()+1}</div>
+        <div style="font-size:10px;color:#64748b">${MESES[dt.getMonth()]}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:600">${c.name}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:1px">${c.tower} · ${c.phone} · ${c.time||''}</div>
+        ${c.notes ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px;font-style:italic">'+c.notes+'</div>' : ''}
+        <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">${badges.join('')}</div>
+      </div>
+      <div style="font-size:12px;color:#94a3b8;flex-shrink:0;align-self:center">${d===0?'Hoy':d>0?'En '+d+'d':'Hace '+Math.abs(d)+'d'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════ BLACKLIST ═══════════════════════
+function renderBL() {
+  document.getElementById('bl-count').textContent = blacklist.length+' registros';
+  document.getElementById('bl-tbody').innerHTML = blacklist.map(b => `
+    <tr>
+      <td style="font-weight:600">${b.name||'—'}</td>
+      <td>${b.phone||'—'}</td>
+      <td style="font-size:12px">${b.tower||'—'}</td>
+      <td style="color:#dc2626;font-weight:700">${b.amount?fmt(b.amount):'—'}</td>
+      <td style="font-size:12px;color:#64748b">${b.reason||'—'}</td>
+      <td style="font-size:12px">${b.date}</td>
+    </tr>`).join('');
+}
+
+function saveBL() {
+  const name=document.getElementById('bl-name').value.trim();
+  const phone=document.getElementById('bl-phone').value.trim();
+  const tower=document.getElementById('bl-tower').value.trim();
+  if(!name&&!phone&&!tower) { showToast('Agrega al menos un dato','d'); return; }
+  blacklist.unshift({id:'bl'+Date.now(),name,phone,tower,amount:document.getElementById('bl-amount').value||0,reason:document.getElementById('bl-reason').value,date:new Date().toISOString().slice(0,10)});
+  syncAll(); showToast('🚫 Agregado a la Blacklist');
+  toggleForm('form-bl'); renderBL();
+  ['bl-name','bl-phone','bl-tower','bl-amount','bl-reason'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ═══════════════════════ DOCUMENTOS ═══════════════════════
+function openDocModal(id) {
+  const inv = invoices.find(i=>i.id===id); if(!inv) return;
+  const t = TEAMS[inv.team];
+  const tipos = {cotizacion:'Cotización',factura:'Factura',recibo:'Recibo de pago'};
+  document.getElementById('modal-title').textContent = (tipos[inv.type]||inv.type)+' — '+inv.client;
+  const iid = inv.id;
+  window._modalInvId = inv.id;
+  setTimeout(()=>{
+    const bwa = document.getElementById('btn-wa-modal');
+    const bsign = document.getElementById('btn-sign-modal');
+    if(bwa) bwa.style.display = inv.waSent ? 'none' : 'inline-flex';
+    if(bsign) bsign.style.display = (inv.waSent && !inv.signed) ? 'inline-flex' : 'none';
+  },50);
+  document.getElementById('modal-body').innerHTML = `
+    <div class="doc-preview">
+      <div class="doc-header">
+        <div>
+          <div style="font-weight:800;font-size:16px;color:#0f4c81">CAZADOR DE FUGAS</div>
+          <div style="font-size:10px;color:#64748b">detectamos · demostramos · reparamos · garantizamos</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#64748b">
+          Unicentro Plaza, Santo Domingo<br>
+          Tel: +1 (849) 517-4977<br>
+          cazadordefugas@gmail.com<br>
+          RNC: ___________<br>
+          <strong>N° ${inv.id.slice(-8).toUpperCase()}</strong>
+        </div>
+      </div>
+      <div class="doc-row"><span class="k">Tipo</span><span class="v">${(tipos[inv.type]||inv.type).toUpperCase()}</span></div>
+      <div class="doc-row"><span class="k">Cliente</span><span class="v">${inv.client}</span></div>
+      <div class="doc-row"><span class="k">Equipo</span><span class="v">${t?.label||inv.team}</span></div>
+      <div class="doc-row"><span class="k">Servicio</span><span class="v">${inv.desc||'Detección y reparación de fuga'}</span></div>
+      <div class="doc-row"><span class="k">Monto total</span><span class="v" style="color:#0f4c81;font-size:16px;font-weight:700">${fmt(inv.amount)}</span></div>
+      <div class="doc-row"><span class="k">Adelanto (antes de la cita)</span><span class="v">${fmt(8000)}</span></div>
+      <div class="doc-row"><span class="k">Saldo al resolver</span><span class="v">${fmt(15000)}</span></div>
+      <div class="doc-row"><span class="k">Fecha</span><span class="v">${inv.date}</span></div>
+      <div class="doc-clausula">
+        <strong>Condiciones del servicio:</strong> El cliente acepta que el monto total de ${fmt(inv.amount)} es fijo e independiente del tiempo de reparación o aparente simplicidad de la solución. La tarifa remunera la detección técnica especializada, el equipamiento y el proceso de diagnóstico completo. El adelanto de ${fmt(8000)} debe pagarse antes de la cita para confirmarla.
+      </div>
+    </div>
+
+    <div style="margin:14px 0 10px;font-weight:600;font-size:13px;color:#0f4c81">🤖 Mejorar con IA</div>
+    <div style="position:relative">
+      <textarea id="ai-doc-input" placeholder="Describe las fugas... o usa el micrófono 🎤" style="width:100%;padding:8px 40px 8px 8px;border-radius:7px;border:1px solid #cbd5e1;font-size:13px;min-height:70px;font-family:inherit"></textarea>
+      <button onclick="startMic('ai-doc-input')" style="position:absolute;right:6px;top:6px;background:none;border:none;cursor:pointer;font-size:20px" title="Hablar">🎤</button>
+    </div>
+    <div class="btn-group" style="margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="askAIDoc('${iid}')">🤖 Generar descripción</button>
+      <span id="mic-status-doc" style="font-size:11px;color:#64748b"></span>
+    </div>
+    <div id="ai-doc-result-${inv.id}" style="display:none;margin-top:10px;padding:10px;background:#f0f9ff;border-radius:7px;border:1px solid #93c5fd;font-size:13px;line-height:1.6;color:#1e40af;white-space:pre-wrap"></div>
+
+    <div clabtn-group" style="margin-top:14px">
+      <button class="btn btn-success" id="btn-wa-modal" onclick="sendWAModal()">📲 Enviar por WhatsApp</button>
+      <button class="btn btn-primary" id="btn-sign-modal" onclick="markSignedModal()">✅ Marcar confirmado</button>
+      <button class="btn" onclick="closeModal()">Cerrar</button>
+    </div>`;
+  document.getElementById('modal-doc').style.display='flex';
+}
+
+function closeModal() { document.getElementById('modal-doc').style.display='none'; }
+
+function sendWAModal() { sendWA(window._modalInvId); closeModal(); }
+function markSignedModal() { markSigned(window._modalInvId); closeModal(); }
+function sendWA(id) {
+  const inv = invoices.find(i=>i.id===id); if(!inv) return;
+  inv.waSent = true; syncAll();
+  showToast('📲 Enviado por WhatsApp');
+}
+
+function markSigned(id) {
+  const inv = invoices.find(i=>i.id===id); if(!inv) return;
+  inv.signed = true; syncAll();
+  showToast('✅ '+inv.client+' confirmó el documento');
+}
+
+// ═══════════════════════ IA — DOCUMENTOS ═══════════════════════
+async function askAIDoc(invId) {
+  const q = document.getElementById('ai-doc-input').value.trim();
+  if(!q) { showToast('Describe las fugas primero','d'); return; }
+  const inv = invoices.find(i=>i.id===invId);
+  const btn = event.target;
+  btn.textContent = '⏳ Generando...'; btn.disabled = true;
+  try {
+    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system:'Eres el redactor técnico de Cazador de Fugas, empresa de detección y reparación de fugas en Santo Domingo. Redacta descripciones profesionales y concisas para facturas/cotizaciones en español. Usa terminología técnica apropiada. Formato: párrafo corto, profesional, en tercera persona.',
+        messages:[{role:'user', content:'Redacta la descripción del servicio para este documento:\n\nCliente: '+(inv?.client||'')+'\nEquipo: '+(TEAMS[inv?.team]?.label||'')+'\n\nDescripción del técnico: '+q+'\n\nRedacta 2-3 oraciones profesionales describiendo el trabajo realizado.'}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'Error al generar';
+    const el = document.getElementById('ai-doc-result-'+invId);
+    el.style.display='block'; el.textContent = text;
+    if(inv) inv.desc = text;
+  } catch(e) {
+    showToast('Error de conexión con IA','d');
+  } finally {
+    btn.textContent='🤖 Generar descripción'; btn.disabled=false;
+  }
+}
+
+// ═══════════════════════ IA — ESTADÍSTICAS ═══════════════════════
+async function askAIStats() {
+  const q = document.getElementById('ai-stats-q').value.trim();
+  if(!q) { showToast('Escribe tu consulta primero','d'); return; }
+  const el = document.getElementById('ai-stats-r');
+  el.style.display='block'; el.textContent='⏳ Consultando...';
+
+  const ctx = 'Datos del CRM Cazador de Fugas:\n'+
+    'Clientes: '+JSON.stringify(clients.map(c=>(Object.assign({},{name:c.name,team:c.team,status:c.status,fugas:c.fugas,paid8k:c.paid8k,paidFull:c.paidFull}))))+
+    '\nFacturas: '+JSON.stringify(invoices.map(i=>(Object.assign({},{client:i.client,team:i.team,type:i.type,amount:i.amount,paid:i.paid,status:i.status}))))+
+    '\nEmpleados: '+JSON.stringify(empleados.map(e=>(Object.assign({},{name:e.name,role:e.role,team:e.team,obras:e.obras,cobradas:e.cobradas}))));
+
+  try {
+    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system:'Eres el analista de datos de Cazador de Fugas. Responde preguntas sobre los datos del CRM de forma clara, concisa y en español. Da números exactos cuando los tengas. Máximo 150 palabras.',
+        messages:[{role:'user', content:ctx+'\n\nPregunta: '+q}]
+      })
+    });
+    const data = await res.json();
+    el.textContent = data.content?.[0]?.text || 'Error al consultar';
+  } catch(e) {
+    el.textContent = 'Error de conexión con la IA.';
+  }
+}
+
+// ═══════════════════════ ESTADÍSTICAS ═══════════════════════
+function renderStats() {
+  const totalCA = invoices.filter(i=>i.status==='pagada').reduce((a,i)=>a+i.amount,0);
+  const totalObras = invoices.length;
+  const tasa = totalObras ? Math.round(invoices.filter(i=>i.status==='pagada').length/totalObras*100) : 0;
+  document.getElementById('stats-kpis').innerHTML = [
+    {l:'Total obras',v:totalObras,s:'este mes'},
+    {l:'CA total cobrado',v:fmt(totalCA),s:'obras pagadas'},
+    {l:'Tasa de cobro global',v:tasa+'%',s:'obras cobradas/total',cls:tasa>=80?'':tasa>=60?'warning':'danger'},
+    {l:'Blacklist',v:blacklist.length+' registros',s:'clientes problemáticos'},
+  ].map(k=>`<div class="kpi ${k.cls||''}"><div class="lbl">${k.l}</div><div class="val">${k.v}</div><div class="sub">${k.s}</div></div>`).join('');
+
+  const ts = Object.entries(TEAMS).map(([id,t])=>{
+    const obras=invoices.filter(i=>i.team===id);
+    const ok=obras.filter(i=>i.status==='pagada');
+    const ca=ok.reduce((a,i)=>a+i.amount,0);
+    const tasa=obras.length?Math.round(ok.length/obras.length*100):0;
+    return {...t,id,obras:obras.length,ok:ok.length,ca,tasa};
+  }).sort((a,b)=>b.ca-a.ca);
+  const maxCA=ts[0]?.ca||1;
+  const medals=['🥇','🥈','🥉','4️⃣'];
+  document.getElementById('stats-teams').innerHTML = ts.map((t,i)=>`
+    <div class="team-stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px">${medals[i]}</span><span class="badge ${t.cls}">${t.label}</span></div>
+        <span style="font-size:17px;font-weight:700;color:#0f4c81">${fmt(t.ca)}</span>
+      </div>
+      <div class="bar-track" style="height:6px;margin-bottom:8px"><div class="bar-fill" style="width:${Math.round(t.ca/maxCA*100)}%;background:${t.color}"></div></div>
+      <div style="display:flex;gap:18px;font-size:12px;color:#64748b">
+        <span>📋 ${t.obras} obras</span><span>✅ ${t.ok} cobradas</span>
+        <span>Tasa: <span class="${t.tasa>=80?'tasa-good':t.tasa>=60?'tasa-mid':'tasa-bad'}">${t.tasa}%</span></span>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════ EMPLEADOS ═══════════════════════
+function renderEmpleados() {
+  const mejor = [...empleados].sort((a,b)=>(b.cobradas/Math.max(b.obras,1))-(a.cobradas/Math.max(a.obras,1)))[0];
+  document.getElementById('emp-kpis').innerHTML = [
+    {l:'Total empleados',v:empleados.length,s:'activos'},
+    {l:'Más eficiente',v:mejor?.name||'—',s:mejor?Math.round(mejor.cobradas/Math.max(mejor.obras,1)*100)+'% tasa':''},
+    {l:'Equipos activos',v:4,s:'configurados'},
+  ].map(k=>`<div class="kpi"><div class="lbl">${k.l}</div><div class="val">${k.v}</div><div class="sub">${k.s}</div></div>`).join('');
+
+  const ranked = [...empleados].sort((a,b)=>(b.cobradas/Math.max(b.obras,1))-(a.cobradas/Math.max(a.obras,1)));
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
+  document.getElementById('emp-ranking').innerHTML = ranked.map((e,i)=>{
+    const tasa=Math.round(e.cobradas/Math.max(e.obras,1)*100);
+    const t=TEAMS[e.team];
+    return `<div class="team-stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">${medals[i]||'▪'}</span>
+          <span style="font-weight:700">${e.name}</span>
+          <span class="badge ${e.role==='jefe'?'badge-blue':e.role==='supervisor'?'badge-green':'badge-gray'}">${e.role==='jefe'?'Jefe':e.role==='supervisor'?'Supervisor':'Ayudante'}</span>
+          ${t?'<span class="badge '+t.cls+'">'+t.label+'</span>':''}
+        </div>
+        <span style="font-size:18px;font-weight:700;color:#0f4c81">${tasa}%</span>
+      </div>
+      <div class="bar-track" style="height:5px;margin-bottom:8px"><div class="bar-fill" style="width:${tasa}%;background:${tasa>=85?'#15803d':tasa>=70?'#d97706':'#dc2626'}"></div></div>
+      <div style="font-size:12px;color:#64748b;display:flex;gap:16px">
+        <span>📋 ${e.obras} obras</span><span>✅ ${e.cobradas} cobradas</span>
+        <span>🔄 ${e.history.map(h=>TEAMS[h]?.label||h).join(' → ')}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const empRows = Object.entries(TEAMS).map(([id,t])=>{
+    const jefe=empleados.find(e=>e.team===id&&e.role==='jefe');
+    const ayud=empleados.find(e=>e.team===id&&e.role==='ayudante');
+    const obras=invoices.filter(i=>i.team===id).length;
+    const cobradas=invoices.filter(i=>i.team===id&&i.status==='pagada').length;
+    const tasa=obras?Math.round(cobradas/obras*100):0;
+    return `<tr><td><span class="badge ${t.cls}">${t.label}</span></td><td style="font-weight:600">👑 ${jefe?.name||'—'}</td><td>${ayud?.name||'—'}</td><td>${obras}</td><td><span class="${tasa>=80?'tasa-good':tasa>=60?'tasa-mid':'tasa-bad'}">${tasa}%</span></td></tr>`;
+  }).join('');
+  document.getElementById('emp-equipos-tbody').innerHTML = empRows;
+
+  const selJ=document.getElementById('ee-jefe');
+  const selA=document.getElementById('ee-ayudante');
+  if(selJ) {
+    const opts=empleados.filter(e=>e.role!=='supervisor').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    selJ.innerHTML=opts; selA.innerHTML=opts;
+  }
+}
+
+function updateEquipo() {
+  const team=document.getElementById('ee-team').value;
+  const jId=document.getElementById('ee-jefe').value;
+  const aId=document.getElementById('ee-ayudante').value;
+  if(jId===aId){ showToast('El jefe y ayudante no pueden ser la misma persona','d'); return; }
+  empleados.forEach(e=>{
+    if(e.id===jId){ if(e.team!==team) e.history.push(team); e.team=team; e.role='jefe'; }
+    else if(e.id===aId){ if(e.team!==team) e.history.push(team); e.team=team; e.role='ayudante'; }
+  });
+  showToast('✅ Equipo actualizado'); toggleForm('form-equipo'); renderEmpleados();
+}
+
+// ═══════════════════════ MICRÓFONO ═══════════════════════
+function startMic(targetId) {
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Tu navegador no soporta reconocimiento de voz. Usa Chrome.', 'd');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'es-DO';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const statusId = targetId === 'ai-doc-input' ? 'mic-status-doc' : 'mic-status-stats';
+  const statusEl = document.getElementById(statusId);
+
+  recognition.onstart = () => {
+    if(statusEl) statusEl.textContent = '🔴 Escuchando...';
+    showToast('🎤 Habla ahora...', 'w');
+  };
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const el = document.getElementById(targetId);
+    if(el) el.value = (el.value ? el.value + ' ' : '') + transcript;
+    if(statusEl) statusEl.textContent = '✅ Transcrito';
+    showToast('✅ Voz transcrita correctamente');
+  };
+
+  recognition.onerror = (e) => {
+    if(statusEl) statusEl.textContent = '';
+    showToast('Error de micrófono: ' + e.error, 'd');
+  };
+
+  recognition.onend = () => {
+    if(statusEl) setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  };
+
+  recognition.start();
+}
+
+// ═══════════════════════ INIT ═══════════════════════
+checkSession();
+</script>
+</body>
+</html>
