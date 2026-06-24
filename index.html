@@ -812,59 +812,53 @@ function renderDashboard() {
 // ═══════════════════════ CLIENTES ═══════════════════════
 function renderClients() {
   const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
+  const TC2 = {
+    rojo:     {dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},
+    azul:     {dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},
+    verde:    {dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},
+    amarillo: {dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'},
+  };
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
-    const TC2 = {rojo:{dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},azul:{dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},verde:{dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},amarillo:{dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'}};
-    const tc = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
+    const tc  = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
     const fin = c.status==='pagado';
     const dis = c.status==='disputa';
     const bg  = dis?'#FFF7ED':fin?tc.lt:tc.dk;
     const col = dis?'#92400e':fin?tc.td:'#fff';
     const sub = dis?'#92400e':fin?tc.td+'bb':'rgba(255,255,255,0.8)';
     const bd  = dis?'#FDE68A':tc.bd;
-    const d = daysUntil(c.date);
-    const inp = (fld,val) => '<input type="number" value="'+(val||0)+'" min="0" style="width:75px;padding:3px 5px;border-radius:5px;border:1px solid '+bd+';background:rgba(255,255,255,0.25);color:'+col+';font-size:12px;text-align:center" onchange="updatePago(''+c.id+'',''+fld+'',this.value)" onclick="event.stopPropagation()">';
-    return '<tr style="background:'+bg+';cursor:pointer" onclick="if(!openMobileModal(''+c.id+''))selectClient(''+c.id+'')">'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.phone+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.tower+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+'">'+teamBadge(c.team)+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.date+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago1',c.pago1)+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago2',c.pago2)+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago3',c.pago3)+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+'">'
+    const s   = 'padding:8px 10px;border-bottom:1px solid '+bd;
+    const pagoInput = function(fld, val) {
+      return '<input type="number" value="'+(val||0)+'" min="0"'
+        +' data-id="'+c.id+'" data-fld="'+fld+'"'
+        +' style="width:75px;padding:3px 5px;border-radius:5px;border:1px solid '+bd
+        +';background:rgba(255,255,255,0.25);color:'+col+';font-size:12px;text-align:center"'
+        +' onchange="updatePagoEl(this)" onclick="event.stopPropagation()">';
+    };
+    const row = '<tr style="background:'+bg+';cursor:pointer" onclick="if(!openMobileModal(\'' +c.id+ '\'))selectClient(\'' +c.id+ '\')">'
+      +'<td style="'+s+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td>'
+      +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.phone+'</td>'
+      +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.tower+'</td>'
+      +'<td style="'+s+'">'+teamBadge(c.team)+'</td>'
+      +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.date+'</td>'
+      +'<td style="'+s+';text-align:center">'+pagoInput('pago1',c.pago1)+'</td>'
+      +'<td style="'+s+';text-align:center">'+pagoInput('pago2',c.pago2)+'</td>'
+      +'<td style="'+s+';text-align:center">'+pagoInput('pago3',c.pago3)+'</td>'
+      +'<td style="'+s+'">'
         +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
-          +'<a href="'+gcalUrl(c,'yerald')+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">👷</a>'
-          +'<a href="'+gcalUrl(c,'alex')+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">👔</a>'
-          +'<a href="https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">📁</a>'
+          +'<a href="'+gcalUrl(c,'yerald')+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none">👷</a>'
+          +'<a href="'+gcalUrl(c,'alex')+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none">👔</a>'
+          +'<a href="https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none">📁</a>'
         +'</div>'
       +'</td>'
       +'</tr>';
+    return row;
   }).join('');
-}
-
-function updatePago(clientId, field, value) {
-  const c = clients.find(cl=>cl.id===clientId);
-  if(!c) return;
-  c[field] = Number(value)||0;
-  // Auto-set status to pagado if all payments done
-  const total = (c.pago1||0) + (c.pago2||0) + (c.pago3||0);
-  if(total >= 23000 && c.status !== 'disputa') c.status = 'pagado';
-  syncAll();
-  renderDashboard();
 }
 
 function renderMisClientes() {
   // Para jefes de equipo
   const list = clients.filter(c=>c.team===currentUser?.team);
-  document.getElementById('clients-tbody').innerHTML = list.map(c => `
-    <tr>
-      <td style="font-weight:600">${c.name}</td>
-      <td>${c.phone}</td>
-      <td style="font-size:12px;color:#64748b">${c.tower}</td>
-      <td>${c.date}</td>
-      <td><a href="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}" target="_blank" class="btn btn-sm" style="background:#FEF9C3;border-color:#FDE047;color:#854D0E">📁 Fotos</a></td>
-    </tr>`).join('');
+  
 }
 
 function selectClient(id) {
