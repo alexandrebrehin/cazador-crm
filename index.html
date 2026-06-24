@@ -67,6 +67,8 @@ textarea{resize:vertical;min-height:65px}
 .btn-primary:hover{background:#0d4070}
 .btn-danger{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
 .btn-success{background:#dcfce7;border-color:#86efac;color:#15803d}
+.btn-save{background:#0f4c81;border-color:#0f4c81;color:#fff;font-size:14px;padding:8px 18px}
+.btn-save:hover{background:#0d4070}
 .btn-sm{padding:4px 10px;font-size:11px}
 .btn-group{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -122,6 +124,10 @@ textarea{resize:vertical;min-height:65px}
 .pin-btn:hover{background:#dbeafe;border-color:#93c5fd}
 .pin-display{font-size:28px;letter-spacing:12px;height:44px;display:flex;align-items:center;justify-content:center;color:#0f4c81;margin-bottom:8px}
 .pin-error{color:#dc2626;font-size:13px;margin-top:8px;min-height:20px}
+
+/* Indicateur modifications non sauvegardées */
+.unsaved-indicator{display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:8px 14px;font-size:12px;color:#856404;align-items:center;gap:8px}
+.unsaved-indicator.visible{display:flex}
 </style>
 </head>
 <body>
@@ -189,6 +195,8 @@ textarea{resize:vertical;min-height:65px}
 <!-- CLIENTES -->
 <div id="clientes" class="page">
   <div class="page-title">👤 Clientes</div>
+
+  <!-- Verificar blacklist -->
   <div class="card-form" style="margin-bottom:14px">
     <div class="section-title" style="margin-bottom:10px">🔍 Verificar antes de agendar</div>
     <div class="form-grid g3">
@@ -199,27 +207,17 @@ textarea{resize:vertical;min-height:65px}
     <div id="bl-result"></div>
   </div>
 
-  <div id="panel-acciones" style="display:none;background:#EFF6FF;border:1px solid #93C5FD;border-radius:10px;padding:12px;margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span style="font-weight:600;color:#1e40af;font-size:13px" id="nombre-seleccionado">—</span>
-      <div class="btn-group">
-        <button class="btn btn-primary btn-sm" onclick="crearDoc('cotizacion')">📋 Cotización</button>
-        <button class="btn btn-success btn-sm" onclick="crearDoc('factura')">🧾 Factura</button>
-        <button class="btn btn-sm" style="background:#F3E8FF;border-color:#C084FC;color:#7E22CE" onclick="crearDoc('recibo')">💳 Recibo</button>
-        <button class="btn btn-sm" style="background:#FFF7ED;border-color:#FED7AA;color:#c2410c" onclick="marcarDisputa()">⚠️ En disputa</button>
-        <button class="btn btn-success btn-sm" onclick="marcarPagado()">✅ Pagado</button>
-        <button class="btn btn-danger btn-sm" onclick="eliminarCliente()">🗑 Eliminar</button>
-        <button class="btn btn-sm" onclick="deselect()">✕</button>
-      </div>
+  <!-- Barra de acciones principale -->
+  <div class="section-header">
+    <div class="section-title">Clientes activos</div>
+    <div class="btn-group">
+      <div class="unsaved-indicator" id="unsaved-indicator">⚠️ Cambios sin guardar</div>
+      <button class="btn btn-save" onclick="guardarTodo()">💾 Guardar</button>
+      <button class="btn btn-primary" onclick="abrirFormNuevo()">+ Nuevo cliente</button>
     </div>
   </div>
 
-  <div class="section-header">
-    <div class="section-title">Clientes activos</div>
-    <button class="btn btn-primary" onclick="toggleForm('form-cliente')">+ Nuevo cliente</button>
-  </div>
-
-  <!-- Botones calendario - fuera del formulario para que no desaparezcan -->
+  <!-- Botones calendario -->
   <div id="gcal-buttons-container" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:10px">📅 Cliente guardado — Abre el calendario:</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -230,42 +228,71 @@ textarea{resize:vertical;min-height:65px}
     </div>
   </div>
 
-  <div id="form-cliente" class="card-form" style="display:none">
-    <div style="font-weight:600;margin-bottom:12px;color:#0f4c81">Agregar nuevo cliente</div>
+  <!-- Formulario nuevo / editar cliente -->
+  <div id="form-cliente" class="card-form" style="display:none;border:2px solid #0f4c81">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:600;color:#0f4c81" id="form-cliente-titulo">Agregar nuevo cliente</div>
+      <button class="btn btn-sm" onclick="cerrarFormCliente()">✕ Cerrar</button>
+    </div>
     <div class="form-grid g3">
-      <div><label>Nombre *</label><input id="nc-name"></div>
-      <div><label>Teléfono *</label><input id="nc-phone"></div>
-      <div><label>Torre / Dirección</label><input id="nc-tower"></div>
+      <div><label>Nombre *</label><input id="nc-name" oninput="marcarCambios()"></div>
+      <div><label>Teléfono *</label><input id="nc-phone" oninput="marcarCambios()"></div>
+      <div><label>Torre / Dirección</label><input id="nc-tower" oninput="marcarCambios()"></div>
     </div>
     <div class="form-grid g3">
       <div><label>Equipo *</label>
-        <select id="nc-team">
+        <select id="nc-team" onchange="marcarCambios()">
           <option value="rojo">Los Rojos</option>
           <option value="azul">Los Azules</option>
           <option value="verde">Los Verdes</option>
           <option value="amarillo">Los Amarillos</option>
         </select>
       </div>
-      <div><label>Fecha de cita *</label><input type="date" id="nc-date"></div>
-      <div><label>Hora</label><input type="time" id="nc-time" value="09:00"></div>
+      <div><label>Fecha de cita *</label><input type="date" id="nc-date" onchange="marcarCambios()"></div>
+      <div><label>Hora</label><input type="time" id="nc-time" value="09:00" onchange="marcarCambios()"></div>
+    </div>
+    <div class="form-grid g3">
+      <div><label>1er pago (RD$)</label><input type="number" id="nc-pago1" value="0" min="0" oninput="marcarCambios()"></div>
+      <div><label>2do pago (RD$)</label><input type="number" id="nc-pago2" value="0" min="0" oninput="marcarCambios()"></div>
+      <div><label>3er pago (RD$)</label><input type="number" id="nc-pago3" value="0" min="0" oninput="marcarCambios()"></div>
     </div>
     <div class="form-grid g2">
-      <div><label>Descripción del problema</label><textarea id="nc-notes" placeholder="Fuga en baño principal..."></textarea></div>
-      <div><label>💧 N° fugas/filtraciones detectadas</label><input type="number" id="nc-fugas" value="0" min="0"></div>
+      <div><label>Descripción del problema</label><textarea id="nc-notes" placeholder="Fuga en baño principal..." oninput="marcarCambios()"></textarea></div>
+      <div>
+        <div><label>💧 N° fugas detectadas</label><input type="number" id="nc-fugas" value="0" min="0" oninput="marcarCambios()"></div>
+        <div style="margin-top:10px"><label>Estado</label>
+          <select id="nc-status" onchange="marcarCambios()">
+            <option value="en_proceso">🔄 En proceso</option>
+            <option value="pagado">✅ Terminado</option>
+            <option value="debe">🔴 Debe saldo</option>
+            <option value="disputa">⚠️ En disputa</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="alert-box alert-i" style="margin-bottom:10px"><span>📅</span><span>Al guardar, se crea la cita en Google Calendario y un presupuesto de RD$ 23,000.</span></div>
+    <input type="hidden" id="nc-editing-id">
+    <div class="alert-box alert-i" style="margin-bottom:10px" id="form-cal-info"><span>📅</span><span>Al guardar un cliente nuevo, se generan los botones de Google Calendario.</span></div>
     <div class="btn-group">
-      <button class="btn btn-primary" onclick="saveClient()">✅ Guardar y generar cita</button>
-      <button class="btn" onclick="toggleForm('form-cliente')">Cancelar</button>
-
+      <button class="btn btn-primary" onclick="saveClient()">✅ Guardar cliente</button>
+      <button class="btn" onclick="cerrarFormCliente()">Cancelar</button>
     </div>
   </div>
 
+  <!-- Tabla clientes -->
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th style='text-align:center'>Estado</th><th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
-        <th>Fecha cita</th><th style='text-align:center'>1er pago</th><th style='text-align:center'>2do pago</th><th style='text-align:center'>3er pago</th><th style='text-align:center'>✅ Ya pagado</th><th>Acciones</th>
+        <th style='text-align:center;width:90px'>Estado</th>
+        <th>Cliente</th>
+        <th>Teléfono</th>
+        <th>Torre / Dir.</th>
+        <th>Equipo</th>
+        <th>Fecha cita</th>
+        <th style='text-align:center'>1er pago</th>
+        <th style='text-align:center'>2do pago</th>
+        <th style='text-align:center'>3er pago</th>
+        <th style='text-align:center'>✅ Total pagado</th>
+        <th>Acciones</th>
       </tr></thead>
       <tbody id="clients-tbody"></tbody>
     </table>
@@ -283,7 +310,7 @@ textarea{resize:vertical;min-height:65px}
 <div id="blacklist" class="page">
   <div class="page-title">🚫 Blacklist</div>
   <div class="alert-box alert-w" style="margin-bottom:14px"><span>⚠️</span>
-    <div>El sistema verifica <strong>teléfono completo, nombre completo y torre exacta</strong> al crear un cliente. Sin accents — "José" = "Jose".</div>
+    <div>El sistema verifica <strong>teléfono completo, nombre completo y torre exacta</strong> al crear un cliente.</div>
   </div>
   <div class="section-header">
     <div class="section-title">Registros — <span id="bl-count">0</span></div>
@@ -370,54 +397,14 @@ textarea{resize:vertical;min-height:65px}
 
 </div><!-- /main -->
 
-<!-- MODAL EDITAR CLIENTE -->
-<div id="modal-edit-cliente" class="modal-bg" style="display:none" onclick="if(event.target===this)closeEditModal()">
-  <div class="modal" style="width:560px">
+<!-- MODAL DOCUMENTO -->
+<div id="modal-doc" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">✏️ Editar cliente</div>
-      <button class="btn-close" onclick="closeEditModal()">✕</button>
+      <div class="modal-title" id="modal-title">Documento</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="form-grid g3" style="margin-bottom:10px">
-      <div><label>Nombre *</label><input id="ec-name"></div>
-      <div><label>Teléfono *</label><input id="ec-phone"></div>
-      <div><label>Torre / Dirección</label><input id="ec-tower"></div>
-    </div>
-    <div class="form-grid g3" style="margin-bottom:10px">
-      <div><label>Equipo *</label>
-        <select id="ec-team">
-          <option value="rojo">Los Rojos</option>
-          <option value="azul">Los Azules</option>
-          <option value="verde">Los Verdes</option>
-          <option value="amarillo">Los Amarillos</option>
-        </select>
-      </div>
-      <div><label>Fecha de cita</label><input type="date" id="ec-date"></div>
-      <div><label>Hora</label><input type="time" id="ec-time"></div>
-    </div>
-    <div class="form-grid g2" style="margin-bottom:10px">
-      <div><label>Notas</label><textarea id="ec-notes" style="min-height:50px"></textarea></div>
-      <div><label>💧 Fugas detectadas</label><input type="number" id="ec-fugas" min="0"></div>
-    </div>
-    <div class="form-grid g3" style="margin-bottom:10px">
-      <div><label>1er pago (RD$)</label><input type="number" id="ec-pago1" min="0"></div>
-      <div><label>2do pago (RD$)</label><input type="number" id="ec-pago2" min="0"></div>
-      <div><label>3er pago (RD$)</label><input type="number" id="ec-pago3" min="0"></div>
-    </div>
-    <div class="form-grid g2" style="margin-bottom:14px">
-      <div><label>Estado</label>
-        <select id="ec-status">
-          <option value="pendiente">Pendiente</option>
-          <option value="pagado">Pagado / Terminado</option>
-          <option value="debe">Debe saldo</option>
-          <option value="disputa">En disputa</option>
-        </select>
-      </div>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="saveEditCliente()">✅ Guardar cambios</button>
-      <button class="btn btn-danger" onclick="addToBlacklist()">🚫 Agregar a Blacklist</button>
-      <button class="btn" onclick="closeEditModal()">Cancelar</button>
-    </div>
+    <div id="modal-body"></div>
   </div>
 </div>
 
@@ -435,20 +422,9 @@ textarea{resize:vertical;min-height:65px}
   </div>
 </div>
 
-<!-- MODAL DOCUMENTO -->
-<div id="modal-doc" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-title">Documento</div>
-      <button class="btn-close" onclick="closeModal()">✕</button>
-    </div>
-    <div id="modal-body"></div>
-  </div>
-</div>
-
 <script>
 // ═══════════════════════ CONFIGURACIÓN ═══════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1zAGQsT4cN8Wkhr0aaa4vjvNOnM-SCrGRmIvfih3r8G-aBO_b7cQ9WFS7kFBmIKKZ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3CoXJGkU_nIjNu1PB9mFtU7o3Ccp4PqZ5JdFCX1zEFXm1A_mRzlzsLcF4d8itu_bvxA/exec';
 const DRIVE_FOLDER_ID = '1O5Muv0YYJZqptMY6KWvoldTfI-S6OWF4';
 const GCAL = {
   rojo:     '02bffa46219f87c68574f5ca19c938b6d687af704915e860fa321fe2f1fa48d2@group.calendar.google.com',
@@ -470,7 +446,6 @@ const USERS = [
   {id:'alomar',  name:'Alomar',    pin:'4444', role:'jefe',       team:'verde'},
 ];
 
-// NAV POR ROL
 const NAV_CONFIG = {
   admin:      ['dashboard','clientes','agenda','blacklist','estadisticas','empleados','ubicaciones'],
   secretaria: ['clientes','agenda','blacklist'],
@@ -498,14 +473,14 @@ const TEAMS = {
 };
 
 let currentUser = null;
-let selectedClientId = null;
 let pinBuffer = '';
+let hayCambiosSinGuardar = false;
 
 let clients = [
   {id:'c1',name:'Ana Rodríguez',phone:'8294410021',tower:'Apt 3C, Naco',team:'rojo',date:'2025-06-25',time:'09:00',notes:'Fuga cocina',fugas:1,pago1:8000,pago2:15000,pago3:0,status:'pagado'},
-  {id:'c2',name:'Carlos Méndez',phone:'8093127788',tower:'Torre Piantini B2',team:'azul',date:'2025-06-27',time:'10:00',notes:'Humedad pared',fugas:0,pago1:0,pago2:0,pago3:0,status:'pendiente'},
-  {id:'c3',name:'Luis Guerrero',phone:'8492205511',tower:'Urb. Real Apt 7',team:'verde',date:'2025-06-24',time:'08:30',notes:'Fuga baño',fugas:2,pago1:8000,pago2:10000,pago3:0,status:'pendiente'},
-  {id:'c4',name:'María Santos',phone:'8091234567',tower:'Res. La Esperanza',team:'amarillo',date:'2025-06-29',time:'11:00',notes:'Filtración terraza',fugas:0,pago1:0,pago2:0,pago3:0,status:'pendiente'},
+  {id:'c2',name:'Carlos Méndez',phone:'8093127788',tower:'Torre Piantini B2',team:'azul',date:'2025-06-27',time:'10:00',notes:'Humedad pared',fugas:0,pago1:0,pago2:0,pago3:0,status:'en_proceso'},
+  {id:'c3',name:'Luis Guerrero',phone:'8492205511',tower:'Urb. Real Apt 7',team:'verde',date:'2025-06-24',time:'08:30',notes:'Fuga baño',fugas:2,pago1:8000,pago2:10000,pago3:0,status:'en_proceso'},
+  {id:'c4',name:'María Santos',phone:'8091234567',tower:'Res. La Esperanza',team:'amarillo',date:'2025-06-29',time:'11:00',notes:'Filtración terraza',fugas:0,pago1:0,pago2:0,pago3:0,status:'en_proceso'},
 ];
 
 let invoices = [
@@ -536,12 +511,9 @@ let empleados = [
 const fmt = n => 'RD$ ' + Number(n).toLocaleString('es-DO');
 const daysUntil = d => Math.ceil((new Date(d) - new Date()) / 86400000);
 
-// Normalizar sin acentos y sin espacios (para blacklist)
 function normalize(s) {
   if(typeof s !== 'string') s = String(s||'');
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[\s\-\.]/g,'');
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s\-\.]/g,'');
 }
 
 function teamBadge(id) {
@@ -551,12 +523,10 @@ function teamBadge(id) {
 
 function statusBadge(s) {
   const m = {
-    pagado:   ['badge-green','Pagado'],
-    pagada:   ['badge-green','Pagada'],
-    parcial:  ['badge-yellow','Adelanto OK'],
-    pendiente:['badge-blue','Pendiente'],
-    debe:     ['badge-red','Debe saldo'],
-    disputa:  ['badge-orange','En disputa'],
+    pagado:     ['badge-green','✅ Terminado'],
+    en_proceso: ['badge-blue','🔄 En proceso'],
+    debe:       ['badge-red','🔴 Debe saldo'],
+    disputa:    ['badge-orange','⚠️ En disputa'],
   };
   const r = m[s] || ['badge-gray',s];
   return `<span class="badge ${r[0]}">${r[1]}</span>`;
@@ -580,6 +550,11 @@ function toggleForm(id) {
   if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
 }
 
+function marcarCambios() {
+  hayCambiosSinGuardar = true;
+  document.getElementById('unsaved-indicator').classList.add('visible');
+}
+
 // ═══════════════════════ LOGIN ═══════════════════════
 function pinPress(n) {
   if(pinBuffer.length >= 4) return;
@@ -588,27 +563,17 @@ function pinPress(n) {
   if(pinBuffer.length === 4) setTimeout(checkPin, 200);
 }
 
-// Keyboard support for PIN
 document.addEventListener('keydown', function(e) {
   const loginWrap = document.getElementById('login-wrap');
   if(!loginWrap || loginWrap.style.display === 'none') return;
-  // Only trigger if no button was just clicked
   if(e.target && e.target.classList.contains('pin-btn')) return;
   if(e.key >= '0' && e.key <= '9') { e.preventDefault(); pinPress(parseInt(e.key)); }
   else if(e.key === 'Backspace') { e.preventDefault(); pinDel(); }
   else if(e.key === 'Escape') { e.preventDefault(); pinClear(); }
 });
 
-function pinDel() {
-  pinBuffer = pinBuffer.slice(0,-1);
-  updatePinDisplay();
-}
-
-function pinClear() {
-  pinBuffer = '';
-  updatePinDisplay();
-  document.getElementById('pin-error').textContent = '';
-}
+function pinDel() { pinBuffer = pinBuffer.slice(0,-1); updatePinDisplay(); }
+function pinClear() { pinBuffer = ''; updatePinDisplay(); document.getElementById('pin-error').textContent = ''; }
 
 function updatePinDisplay() {
   const dots = pinBuffer.split('').map(()=>'●').join(' ');
@@ -628,8 +593,7 @@ function checkPin() {
     loginSuccess();
   } else {
     document.getElementById('pin-error').textContent = 'Código incorrecto. Inténtalo de nuevo.';
-    pinBuffer = '';
-    updatePinDisplay();
+    pinBuffer = ''; updatePinDisplay();
   }
 }
 
@@ -656,15 +620,11 @@ function buildNav() {
   }).join('');
 }
 
-// Logout
 function logout() {
-  localStorage.removeItem('crm_user');
-  localStorage.removeItem('crm_exp');
-  currentUser = null;
-  location.reload();
+  localStorage.removeItem('crm_user'); localStorage.removeItem('crm_exp');
+  currentUser = null; location.reload();
 }
 
-// Check remembered session
 function checkSession() {
   const uid = localStorage.getItem('crm_user');
   const exp = localStorage.getItem('crm_exp');
@@ -683,32 +643,18 @@ function nav(id, btn) {
   if(pg) pg.classList.add('active');
   if(btn) btn.classList.add('active');
   renderPage(id);
-  // Close sidebar on mobile after navigation
-  if(window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('open');
-  }
+  if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
 }
 
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('open');
-  const main = document.getElementById('main-content');
-  if(sidebar.classList.contains('open')) {
-    main.style.marginLeft = '0';
-  } else {
-    main.style.marginLeft = '0';
-  }
+  document.getElementById('sidebar').classList.toggle('open');
 }
 
 function renderPage(id) {
   const fn = {
-    dashboard: renderDashboard,
-    clientes: renderClients,
-    'mis-clientes': renderMisClientes,
-    agenda: renderAgenda,
-    blacklist: renderBL,
-    estadisticas: renderStats,
-    empleados: renderEmpleados,
+    dashboard: renderDashboard, clientes: renderClients,
+    'mis-clientes': renderClients, agenda: renderAgenda,
+    blacklist: renderBL, estadisticas: renderStats, empleados: renderEmpleados,
   };
   if(fn[id]) fn[id]();
 }
@@ -734,6 +680,23 @@ async function syncAll() {
   await saveToSheets('Blacklist', blacklist.map(b=>([b.id,b.name||'',b.phone||'',b.tower||'',b.amount||0,b.reason||'',b.date])));
 }
 
+// ═══════════════════════ GUARDAR GLOBAL ═══════════════════════
+async function guardarTodo() {
+  const btn = document.querySelector('.btn-save');
+  btn.textContent = '⏳ Guardando...'; btn.disabled = true;
+  try {
+    await syncAll();
+    hayCambiosSinGuardar = false;
+    document.getElementById('unsaved-indicator').classList.remove('visible');
+    showToast('💾 Todo guardado correctamente');
+    renderClients(); renderDashboard();
+  } catch(e) {
+    showToast('❌ Error al guardar. Inténtalo de nuevo.','d');
+  } finally {
+    btn.textContent = '💾 Guardar'; btn.disabled = false;
+  }
+}
+
 function initFromSheets() {
   renderDashboard();
   setTimeout(async () => {
@@ -744,7 +707,7 @@ function initFromSheets() {
           id:r[0],name:r[1],phone:r[2],tower:r[3],team:r[4],
           date:r[5],time:r[6]||'09:00',notes:r[7]||'',fugas:Number(r[8])||0,
           pago1:Number(r[9])||0,pago2:Number(r[10])||0,pago3:Number(r[11])||0,
-          status:r[12]||'pendiente'
+          status:r[12]||'en_proceso'
         }));
         if(loaded.length) clients = loaded;
       }
@@ -765,8 +728,7 @@ function initFromSheets() {
         }));
         if(loaded.length) blacklist = loaded;
       }
-      renderDashboard();
-      renderClients();
+      renderDashboard(); renderClients();
       showToast('✅ Datos sincronizados');
     } catch(e) { console.log('Sheets bg error:', e); }
   }, 200);
@@ -779,26 +741,16 @@ function checkBL() {
   const tower = document.getElementById('s-tower').value.trim();
   const el = document.getElementById('bl-result');
   if(!name && !phone && !tower) { el.innerHTML=''; return; }
-
   const hits = [];
   blacklist.forEach(b => {
     const m = [];
-    // Teléfono: exacto completo
     if(phone && b.phone && normalize(b.phone) === normalize(phone)) m.push('teléfono exacto');
-    // Nombre: exacto completo (sin acentos)
     if(name && b.name && normalize(b.name) === normalize(name)) m.push('nombre completo');
-    // Torre: exacta (sin acentos)
     if(tower && b.tower && normalize(b.tower) === normalize(tower)) m.push('torre exacta');
     if(m.length) hits.push({...b, matches:m});
   });
-
   if(hits.length) {
-    el.innerHTML = hits.map(h => `
-      <div class="alert-box alert-d" style="margin-top:8px">
-        <span style="font-size:16px">🚫</span>
-        <div><strong>¡BLACKLIST!</strong> Coincide por <strong>${h.matches.join(', ')}</strong> con <strong>${h.name||'—'}</strong><br>
-        Debe: ${fmt(h.amount||0)} · Motivo: ${h.reason||'—'}</div>
-      </div>`).join('');
+    el.innerHTML = hits.map(h => `<div class="alert-box alert-d" style="margin-top:8px"><span style="font-size:16px">🚫</span><div><strong>¡BLACKLIST!</strong> Coincide por <strong>${h.matches.join(', ')}</strong> con <strong>${h.name||'—'}</strong><br>Debe: ${fmt(h.amount||0)} · Motivo: ${h.reason||'—'}</div></div>`).join('');
   } else {
     el.innerHTML = `<div class="alert-box alert-s" style="margin-top:8px"><span>✅</span><span>Sin coincidencias. Puedes continuar.</span></div>`;
   }
@@ -813,9 +765,8 @@ function renderDashboard() {
   const totalDisputa = clients.filter(c=>c.status==='disputa').reduce((a,c)=>{
     return a + invoices.filter(i=>i.client===c.name).reduce((s,i)=>s+(i.amount-i.paid),0);
   },0);
-  const sinAd = clients.filter(c=>!c.paid8k && daysUntil(c.date)<=2 && daysUntil(c.date)>=0).length;
+  const sinAd = clients.filter(c=>c.pago1===0 && daysUntil(c.date)<=2 && daysUntil(c.date)>=0).length;
 
-  // KPIs según rol
   const isAdmin = currentUser?.role === 'admin';
   const kpis = [];
   if(isAdmin) kpis.push({l:'CA cobrado (mes)',v:fmt(totalCA),s:'obras pagadas',cls:''});
@@ -831,14 +782,13 @@ function renderDashboard() {
   const alerts = [];
   clients.forEach(c => {
     const d = daysUntil(c.date);
-    if(!c.paid8k && d<=2 && d>=0)
+    if(c.pago1===0 && d<=2 && d>=0)
       alerts.push(`<div class="alert-box alert-w"><span>⏰</span><div><strong>${c.name}</strong> — le queda <strong>${d===0?'hoy':d+'d'}</strong> para pagar el adelanto de ${fmt(8000)}</div></div>`);
     if(c.status==='debe')
-      alerts.push(`<div class="alert-box alert-d"><span>🔴</span><div><strong>${c.name}</strong> — debe ${fmt(15000)} · recordatorio cada 2 días</div></div>`);
+      alerts.push(`<div class="alert-box alert-d"><span>🔴</span><div><strong>${c.name}</strong> — debe saldo pendiente</div></div>`);
   });
   document.getElementById('dash-alerts').innerHTML = alerts.length ? alerts.join('') : `<div class="alert-box alert-s"><span>✅</span><span>Sin alertas pendientes.</span></div>`;
 
-  // Tabla compacta
   const TC = {
     rojo:     {dk:'#ED1C24',lt:'#EDBFC6',td:'#B01018',bd:'#ED1C24'},
     azul:     {dk:'#3F48CC',lt:'#C0D5EA',td:'#2A30A0',bd:'#3F48CC'},
@@ -848,19 +798,68 @@ function renderDashboard() {
   const sorted = [...clients].reverse();
   const rows = sorted.map(c => {
     const tc = TC[c.team] || {dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
-    const fin = c.paidFull || c.status==='pagado';
+    const fin = c.status==='pagado';
     const dis = c.status==='disputa';
     const bg  = dis ? '#FFF7ED' : fin ? tc.lt : tc.dk;
     const col = dis ? '#92400e' : fin ? tc.td : '#fff';
     const sub = dis ? '#92400e99' : fin ? tc.td+'99' : 'rgba(255,255,255,0.72)';
     const bd  = dis ? '#FDE68A' : tc.bd;
     const p   = t => '<span style="background:rgba(0,0,0,0.12);padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;color:'+col+'">'+t+'</span>';
-    const saldo = c.paidFull ? p('✅ RD$15,000') : dis ? p('⚠️ Disputa') : c.status==='debe' ? p('🔴 Debe') : p('⏳ Pendiente');
-    const estado = dis ? p('⚠️ En disputa') : fin ? p('✅ Terminado') : p('🔄 En curso');
-    return '<tr style="background:'+bg+'"><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.tower||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.phone||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center;font-weight:700;color:'+col+'">'+(c.fugas||0)+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+p(c.paid8k?'✅ RD$8,000':'⏳ Pendiente')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+saldo+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+estado+'</td></tr>';
+    const totalPagado = (c.pago1||0)+(c.pago2||0)+(c.pago3||0);
+    const saldo = fin ? p('✅ Terminado') : dis ? p('⚠️ Disputa') : c.status==='debe' ? p('🔴 Debe') : p('🔄 En proceso');
+    return '<tr style="background:'+bg+'"><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.tower||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+( c.phone||'—')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center;font-weight:700;color:'+col+'">'+(c.fugas||0)+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+p(c.pago1>0?'✅ RD$'+Number(c.pago1).toLocaleString('es-DO'):'⏳ Pendiente')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center;font-weight:700;color:'+col+'">RD$ '+totalPagado.toLocaleString('es-DO')+'</td><td style="padding:7px 10px;border-bottom:1px solid '+bd+';text-align:center">'+saldo+'</td></tr>';
   }).join('');
 
-  document.getElementById('dash-clients').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Torre</th><th>Teléfono</th><th style="text-align:center">💧 Fugas</th><th style="text-align:center">Adelanto</th><th style="text-align:center">Saldo</th><th style="text-align:center">Estado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('dash-clients').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Torre</th><th>Teléfono</th><th style="text-align:center">💧 Fugas</th><th style="text-align:center">Adelanto</th><th style="text-align:center">Total pagado</th><th style="text-align:center">Estado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+// ═══════════════════════ FORMULAIRE CLIENT ═══════════════════════
+function abrirFormNuevo() {
+  // Réinitialiser pour nouveau client
+  document.getElementById('nc-editing-id').value = '';
+  document.getElementById('form-cliente-titulo').textContent = 'Agregar nuevo cliente';
+  document.getElementById('nc-name').value = '';
+  document.getElementById('nc-phone').value = '';
+  document.getElementById('nc-tower').value = '';
+  document.getElementById('nc-team').value = 'rojo';
+  document.getElementById('nc-date').value = '';
+  document.getElementById('nc-time').value = '09:00';
+  document.getElementById('nc-notes').value = '';
+  document.getElementById('nc-fugas').value = '0';
+  document.getElementById('nc-pago1').value = '0';
+  document.getElementById('nc-pago2').value = '0';
+  document.getElementById('nc-pago3').value = '0';
+  document.getElementById('nc-status').value = 'en_proceso';
+  document.getElementById('form-cal-info').style.display = 'flex';
+  document.getElementById('form-cliente').style.display = 'block';
+  document.getElementById('form-cliente').scrollIntoView({behavior:'smooth'});
+}
+
+function abrirFormEditar(clientId) {
+  const c = clients.find(cl => cl.id === clientId);
+  if(!c) return;
+  document.getElementById('nc-editing-id').value = clientId;
+  document.getElementById('form-cliente-titulo').textContent = '✏️ Editando: ' + c.name;
+  document.getElementById('nc-name').value = c.name || '';
+  document.getElementById('nc-phone').value = c.phone || '';
+  document.getElementById('nc-tower').value = c.tower || '';
+  document.getElementById('nc-team').value = c.team || 'rojo';
+  document.getElementById('nc-date').value = c.date || '';
+  document.getElementById('nc-time').value = c.time || '09:00';
+  document.getElementById('nc-notes').value = c.notes || '';
+  document.getElementById('nc-fugas').value = c.fugas || 0;
+  document.getElementById('nc-pago1').value = c.pago1 || 0;
+  document.getElementById('nc-pago2').value = c.pago2 || 0;
+  document.getElementById('nc-pago3').value = c.pago3 || 0;
+  document.getElementById('nc-status').value = c.status || 'en_proceso';
+  document.getElementById('form-cal-info').style.display = 'none';
+  document.getElementById('form-cliente').style.display = 'block';
+  document.getElementById('form-cliente').scrollIntoView({behavior:'smooth'});
+}
+
+function cerrarFormCliente() {
+  document.getElementById('form-cliente').style.display = 'none';
+  document.getElementById('nc-editing-id').value = '';
 }
 
 // ═══════════════════════ CLIENTES ═══════════════════════
@@ -881,141 +880,115 @@ function renderClients() {
     const sub = dis?'#92400e':fin?tc.td+'bb':'rgba(255,255,255,0.8)';
     const bd  = dis?'#FDE68A':tc.bd;
     const s   = 'padding:8px 10px;border-bottom:1px solid '+bd;
-    const pagoInput = function(fld, val) {
-      return '<input type="number" value="'+(val||0)+'" min="0"'
-        +' data-id="'+c.id+'" data-fld="'+fld+'"'
-        +' style="width:75px;padding:3px 5px;border-radius:5px;border:1px solid '+bd
-        +';background:rgba(255,255,255,0.25);color:'+col+';font-size:12px;text-align:center"'
-        +' onchange="updatePagoEl(this)" onclick="event.stopPropagation()">';
-    };
-    const toggleBtn = fin
-      ? '<button onclick="event.stopPropagation();toggleStatus(\''+c.id+'\',\'pendiente\')" style="padding:2px 8px;border-radius:20px;background:#22B14C;border:none;color:#fff;font-size:10px;cursor:pointer;white-space:nowrap">✅ Terminado</button>'
-      : '<button onclick="event.stopPropagation();toggleStatus(\''+c.id+'\',\'pagado\')" style="padding:2px 8px;border-radius:20px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.4);color:'+col+';font-size:10px;cursor:pointer;white-space:nowrap">🔄 En curso</button>';
-    const row = '<tr style="background:'+bg+'">'
-      +'<td style="'+s+';text-align:center;white-space:nowrap">'+toggleBtn+'</td>'
-      +'<td style="'+s+';font-weight:600;color:'+col+';cursor:pointer;white-space:nowrap" onclick="event.stopPropagation();openEditModal(\''+c.id+'\')" title="Editar cliente">✏️ '+c.name+'</td>'
+    const totalPagado = (c.pago1||0)+(c.pago2||0)+(c.pago3||0);
+
+    // Bouton statut à gauche
+    const btnStatut = fin
+      ? `<button onclick="event.stopPropagation();toggleStatus('${c.id}','en_proceso')" title="Marcar como En proceso" style="width:80px;padding:4px 6px;border-radius:6px;background:#dcfce7;border:1px solid #86efac;color:#15803d;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">✅ Terminado</button>`
+      : `<button onclick="event.stopPropagation();toggleStatus('${c.id}','pagado')" title="Marcar como Terminado" style="width:80px;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:${col};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">🔄 En proceso</button>`;
+
+    return '<tr style="background:'+bg+';cursor:pointer" onclick="abrirFormEditar(\''+c.id+'\')">'
+      +'<td style="'+s+';text-align:center" onclick="event.stopPropagation()">'+btnStatut+'</td>'
+      +'<td style="'+s+';font-weight:600;color:'+col+';white-space:nowrap">✏️ '+c.name+'</td>'
       +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.phone+'</td>'
       +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.tower+'</td>'
       +'<td style="'+s+'">'+teamBadge(c.team)+'</td>'
       +'<td style="'+s+';font-size:12px;color:'+sub+'">'+c.date+'</td>'
-      +'<td style="'+s+';text-align:center">'+pagoInput('pago1',c.pago1)+'</td>'
-      +'<td style="'+s+';text-align:center">'+pagoInput('pago2',c.pago2)+'</td>'
-      +'<td style="'+s+';text-align:center">'+pagoInput('pago3',c.pago3)+'</td>'
-      +'<td style="'+s+';text-align:center;font-weight:700;color:'+col+'">'
-        +((c.pago1||0)+(c.pago2||0)+(c.pago3||0)).toLocaleString('es-DO')
-      +'</td>'
+      +'<td style="'+s+';text-align:center;font-weight:600;color:'+col+'">'+(c.pago1||0).toLocaleString('es-DO')+'</td>'
+      +'<td style="'+s+';text-align:center;font-weight:600;color:'+col+'">'+(c.pago2||0).toLocaleString('es-DO')+'</td>'
+      +'<td style="'+s+';text-align:center;font-weight:600;color:'+col+'">'+(c.pago3||0).toLocaleString('es-DO')+'</td>'
+      +'<td style="'+s+';text-align:center;font-weight:700;color:'+col+';font-size:14px">'+totalPagado.toLocaleString('es-DO')+'</td>'
       +'<td style="'+s+'">'
         +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
           +'<a href="'+gcalUrl(c,'yerald')+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none">👷</a>'
           +'<a href="'+gcalUrl(c,'alex')+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none">👔</a>'
           +'<a href="https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none">📁</a>'
+          +'<button onclick="event.stopPropagation();eliminarClienteById(\''+c.id+'\')" style="padding:4px 7px;border-radius:6px;background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;font-size:11px;font-weight:600;cursor:pointer">🗑</button>'
         +'</div>'
       +'</td>'
       +'</tr>';
-    return row;
   }).join('');
 }
 
-function renderMisClientes() {
-  // Para jefes de equipo
-  const list = clients.filter(c=>c.team===currentUser?.team);
-  
-}
-
-function selectClient(id) {
-  selectedClientId = id;
-  const c = clients.find(cl=>cl.id===id);
+function toggleStatus(clientId, nuevoStatus) {
+  const c = clients.find(cl=>cl.id===clientId);
   if(!c) return;
-  document.getElementById('panel-acciones').style.display = 'block';
-  document.getElementById('nombre-seleccionado').textContent = '👤 '+c.name+' · '+(TEAMS[c.team]?.label||c.team)+' · '+(c.tower||'');
+  c.status = nuevoStatus;
+  marcarCambios();
+  renderClients();
+  renderDashboard();
+  showToast(nuevoStatus==='pagado' ? '✅ Marcado como Terminado' : '🔄 Marcado como En proceso');
 }
 
-function deselect() {
-  selectedClientId = null;
-  document.getElementById('panel-acciones').style.display = 'none';
-}
-
-function marcarDisputa() {
-  if(!selectedClientId) return;
-  const c = clients.find(cl=>cl.id===selectedClientId);
+function eliminarClienteById(clientId) {
+  const c = clients.find(cl=>cl.id===clientId);
   if(!c) return;
-  if(confirm('¿Marcar a '+c.name+' como "En disputa"?\nNo entrará en el KPI de impagos cobrables.')) {
-    c.status = 'disputa';
-    syncAll(); renderClients(); renderDashboard();
-    showToast('⚠️ '+c.name+' marcado como En disputa');
-    deselect();
+  if(confirm('¿Eliminar a ' + c.name + '? Esta acción no se puede deshacer.')) {
+    clients = clients.filter(cl=>cl.id!==clientId);
+    invoices = invoices.filter(i=>i.client!==c.name);
+    marcarCambios();
+    renderClients(); renderDashboard();
+    showToast('🗑 ' + c.name + ' eliminado');
   }
 }
 
-function marcarPagado() {
-  if(!selectedClientId) return;
-  const c = clients.find(cl=>cl.id===selectedClientId);
-  if(!c) return;
-  c.paid8k=true; c.paidFull=true; c.status='pagado';
-  invoices.filter(i=>i.client===c.name).forEach(i=>{ i.status='pagada'; i.paid=i.amount; });
-  syncAll(); renderClients(); renderDashboard();
-  showToast('✅ '+c.name+' marcado como pagado'); deselect();
-}
-
-function crearDoc(tipo) {
-  if(!selectedClientId) return;
-  const c = clients.find(cl=>cl.id===selectedClientId);
-  if(!c) return;
-  const newInv = {
-    id:'f'+Date.now(), client:c.name, team:c.team, type:tipo,
-    amount: tipo==='recibo' ? 8000 : 23000,
-    paid: tipo==='recibo' ? 8000 : 0,
-    date: new Date().toISOString().slice(0,10),
-    status: tipo==='recibo' ? 'pagada' : 'pendiente',
-    signed:false, waSent:false,
-    desc:'Detección y reparación de fuga — '+(c.tower||'')
-  };
-  invoices.unshift(newInv);
-  syncAll();
-  openDocModal(newInv.id);
-}
-
+// ═══════════════════════ GUARDAR / CREAR CLIENTE ═══════════════════════
 function saveClient() {
+  const editingId = document.getElementById('nc-editing-id').value;
   const name  = document.getElementById('nc-name').value.trim();
   const phone = document.getElementById('nc-phone').value.trim();
   const date  = document.getElementById('nc-date').value;
   const team  = document.getElementById('nc-team').value;
-  if(!name||!phone||!date) { showToast('Completa los campos obligatorios','d'); return; }
+  if(!name||!phone) { showToast('Completa nombre y teléfono','d'); return; }
 
-  // BL check exacto
+  // BL check
   const hit = blacklist.find(b =>
     (phone && b.phone && normalize(b.phone)===normalize(phone)) ||
     (name  && b.name  && normalize(b.name)===normalize(name))
   );
-  if(hit) { showToast('🚫 Coincidencia con Blacklist — revisa antes de continuar','d'); return; }
+  if(hit && !editingId) { showToast('🚫 Coincidencia con Blacklist — revisa antes de continuar','d'); return; }
 
-  const tower = document.getElementById('nc-tower').value;
-  const time  = document.getElementById('nc-time').value || '09:00';
-  const notes = document.getElementById('nc-notes').value;
-  const fugas = Number(document.getElementById('nc-fugas').value)||0;
+  const tower  = document.getElementById('nc-tower').value;
+  const time   = document.getElementById('nc-time').value || '09:00';
+  const notes  = document.getElementById('nc-notes').value;
+  const fugas  = Number(document.getElementById('nc-fugas').value)||0;
+  const pago1  = Number(document.getElementById('nc-pago1').value)||0;
+  const pago2  = Number(document.getElementById('nc-pago2').value)||0;
+  const pago3  = Number(document.getElementById('nc-pago3').value)||0;
+  const status = document.getElementById('nc-status').value;
 
-  const newC = {id:'c'+Date.now(),name,phone,tower,team,date,time,notes,fugas,pago1:0,pago2:0,pago3:0,status:'pendiente'};
-  clients.unshift(newC);
-  invoices.unshift({id:'f'+Date.now(),client:name,team,type:'cotizacion',amount:23000,paid:0,date:new Date().toISOString().slice(0,10),status:'pendiente',signed:false,waSent:false,desc:notes||'Detección y reparación de fuga'});
+  if(editingId) {
+    // Mode édition
+    const c = clients.find(cl=>cl.id===editingId);
+    if(!c) return;
+    c.name=name; c.phone=phone; c.tower=tower; c.team=team;
+    c.date=date; c.time=time; c.notes=notes; c.fugas=fugas;
+    c.pago1=pago1; c.pago2=pago2; c.pago3=pago3; c.status=status;
+    marcarCambios();
+    cerrarFormCliente();
+    renderClients(); renderDashboard();
+    showToast('✅ Cliente actualizado — recuerda pulsar 💾 Guardar');
+  } else {
+    // Nouveau client
+    if(!date) { showToast('Indica la fecha de cita','d'); return; }
+    const newC = {id:'c'+Date.now(),name,phone,tower,team,date,time,notes,fugas,pago1,pago2,pago3,status};
+    clients.unshift(newC);
+    invoices.unshift({id:'f'+Date.now(),client:name,team,type:'cotizacion',amount:23000,paid:0,date:new Date().toISOString().slice(0,10),status:'pendiente',signed:false,waSent:false,desc:notes||'Detección y reparación de fuga'});
 
-  // Google Calendar
-  const gs = date.replace(/-/g,'')+'T'+time.replace(':','')+'00';
-  const ge = date.replace(/-/g,'')+'T'+String(Number(time.split(':')[0])+2).padStart(2,'0')+time.split(':')[1]+'00';
-  const det = 'Cliente: '+name+'\nTelefono: '+phone+'\nTorre: '+tower+'\nEquipo: '+(TEAMS[team]?.label||team)+'\nProblema: '+notes+'\n\n📁 Fotos: https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'\n\nAdelanto: RD$ 8,000 | Saldo: RD$ 15,000';
-  const base = 'https://calendar.google.com/calendar/u/1/render?action=TEMPLATE&text='+encodeURIComponent('Cazador de Fugas - '+name+' ('+(TEAMS[team]?.label||team)+')')+'&dates='+gs+'/'+ge+'&details='+encodeURIComponent(det)+'&location='+encodeURIComponent(tower);
-
-  const btnE = document.getElementById('gcal-btn-equipo');
-  const btnY = document.getElementById('gcal-btn-yerald');
-  const btnA = document.getElementById('gcal-btn-alex');
-  btnE.href = base + (GCAL[team] ? '&src='+encodeURIComponent(GCAL[team])+'&ctz=America/Santo_Domingo' : '');
-  btnY.href = base + '&src='+encodeURIComponent(GCAL.yerald)+'&ctz=America/Santo_Domingo';
-  btnA.href = base + '&src='+encodeURIComponent(GCAL.alex)+'&ctz=America/Santo_Domingo';
-  btnE.style.display = btnY.style.display = btnA.style.display = 'inline-flex';
-  document.getElementById('gcal-buttons-container').style.display = 'block';
-  document.getElementById('form-cliente').style.display = 'none';
-
-  syncAll(); renderClients(); renderDashboard();
-  showToast('✅ Cliente guardado · Haz clic en los botones de calendario');
+    // Botones Google Calendar
+    const gs = date.replace(/-/g,'')+'T'+time.replace(':','')+'00';
+    const ge = date.replace(/-/g,'')+'T'+String(Number(time.split(':')[0])+2).padStart(2,'0')+time.split(':')[1]+'00';
+    const det = 'Cliente: '+name+'\nTelefono: '+phone+'\nTorre: '+tower+'\nEquipo: '+(TEAMS[team]?.label||team)+'\nProblema: '+notes+'\n\n📁 Fotos: https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'\n\nAdelanto: RD$ 8,000 | Saldo: RD$ 15,000';
+    const base = 'https://calendar.google.com/calendar/u/1/render?action=TEMPLATE&text='+encodeURIComponent('Cazador de Fugas - '+name+' ('+(TEAMS[team]?.label||team)+')')+'&dates='+gs+'/'+ge+'&details='+encodeURIComponent(det)+'&location='+encodeURIComponent(tower);
+    document.getElementById('gcal-btn-equipo').href = base + (GCAL[team] ? '&src='+encodeURIComponent(GCAL[team])+'&ctz=America/Santo_Domingo' : '');
+    document.getElementById('gcal-btn-yerald').href = base + '&src='+encodeURIComponent(GCAL.yerald)+'&ctz=America/Santo_Domingo';
+    document.getElementById('gcal-btn-alex').href   = base + '&src='+encodeURIComponent(GCAL.alex)+'&ctz=America/Santo_Domingo';
+    document.getElementById('gcal-buttons-container').style.display = 'block';
+    cerrarFormCliente();
+    marcarCambios();
+    renderClients(); renderDashboard();
+    showToast('✅ Cliente agregado — pulsa 💾 Guardar para salvar los datos');
+  }
 }
 
 // ═══════════════════════ GOOGLE CALENDAR HELPER ═══════════════════════
@@ -1036,10 +1009,10 @@ function renderAgenda() {
     const dt = new Date(c.date);
     const t = TEAMS[c.team];
     const badges = [];
-    if(!c.paid8k && d<=2 && d>=0) badges.push('<span class="badge badge-yellow">⏰ Adelanto '+d+'d</span>');
-    if(!c.paid8k && d<0) badges.push('<span class="badge badge-red">🔴 Adelanto vencido</span>');
-    if(c.paid8k && !c.paidFull) badges.push('<span class="badge badge-green">✅ Adelanto OK</span>');
-    if(c.paidFull) badges.push('<span class="badge badge-green">✅ Pagado</span>');
+    if(c.pago1===0 && d<=2 && d>=0) badges.push('<span class="badge badge-yellow">⏰ Adelanto '+d+'d</span>');
+    if(c.pago1===0 && d<0) badges.push('<span class="badge badge-red">🔴 Adelanto vencido</span>');
+    if(c.pago1>0 && c.status!=='pagado') badges.push('<span class="badge badge-green">✅ Adelanto OK</span>');
+    if(c.status==='pagado') badges.push('<span class="badge badge-green">✅ Terminado</span>');
     badges.push(teamBadge(c.team));
     return `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9">
       <div style="width:48px;text-align:center;background:${t?.bg||'#dbeafe'};border-radius:8px;padding:6px 0;flex-shrink:0">
@@ -1088,103 +1061,35 @@ function openDocModal(id) {
   const t = TEAMS[inv.team];
   const tipos = {cotizacion:'Cotización',factura:'Factura',recibo:'Recibo de pago'};
   document.getElementById('modal-title').textContent = (tipos[inv.type]||inv.type)+' — '+inv.client;
-  const iid = inv.id;
   window._modalInvId = inv.id;
-  setTimeout(()=>{
-    const bwa = document.getElementById('btn-wa-modal');
-    const bsign = document.getElementById('btn-sign-modal');
-    if(bwa) bwa.style.display = inv.waSent ? 'none' : 'inline-flex';
-    if(bsign) bsign.style.display = (inv.waSent && !inv.signed) ? 'inline-flex' : 'none';
-  },50);
   document.getElementById('modal-body').innerHTML = `
     <div class="doc-preview">
       <div class="doc-header">
-        <div>
-          <div style="font-weight:800;font-size:16px;color:#0f4c81">CAZADOR DE FUGAS</div>
-          <div style="font-size:10px;color:#64748b">detectamos · demostramos · reparamos · garantizamos</div>
-        </div>
-        <div style="text-align:right;font-size:11px;color:#64748b">
-          Unicentro Plaza, Santo Domingo<br>
-          Tel: +1 (849) 517-4977<br>
-          cazadordefugas@gmail.com<br>
-          RNC: ___________<br>
-          <strong>N° ${inv.id.slice(-8).toUpperCase()}</strong>
-        </div>
+        <div><div style="font-weight:800;font-size:16px;color:#0f4c81">CAZADOR DE FUGAS</div><div style="font-size:10px;color:#64748b">detectamos · demostramos · reparamos · garantizamos</div></div>
+        <div style="text-align:right;font-size:11px;color:#64748b">Unicentro Plaza, Santo Domingo<br>Tel: +1 (849) 517-4977<br>cazadordefugas@gmail.com<br><strong>N° ${inv.id.slice(-8).toUpperCase()}</strong></div>
       </div>
       <div class="doc-row"><span class="k">Tipo</span><span class="v">${(tipos[inv.type]||inv.type).toUpperCase()}</span></div>
       <div class="doc-row"><span class="k">Cliente</span><span class="v">${inv.client}</span></div>
       <div class="doc-row"><span class="k">Equipo</span><span class="v">${t?.label||inv.team}</span></div>
       <div class="doc-row"><span class="k">Servicio</span><span class="v">${inv.desc||'Detección y reparación de fuga'}</span></div>
       <div class="doc-row"><span class="k">Monto total</span><span class="v" style="color:#0f4c81;font-size:16px;font-weight:700">${fmt(inv.amount)}</span></div>
-      <div class="doc-row"><span class="k">Adelanto (antes de la cita)</span><span class="v">${fmt(8000)}</span></div>
+      <div class="doc-row"><span class="k">Adelanto</span><span class="v">${fmt(8000)}</span></div>
       <div class="doc-row"><span class="k">Saldo al resolver</span><span class="v">${fmt(15000)}</span></div>
       <div class="doc-row"><span class="k">Fecha</span><span class="v">${inv.date}</span></div>
-      <div class="doc-clausula">
-        <strong>Condiciones del servicio:</strong> El cliente acepta que el monto total de ${fmt(inv.amount)} es fijo e independiente del tiempo de reparación o aparente simplicidad de la solución. La tarifa remunera la detección técnica especializada, el equipamiento y el proceso de diagnóstico completo. El adelanto de ${fmt(8000)} debe pagarse antes de la cita para confirmarla.
-      </div>
+      <div class="doc-clausula"><strong>Condiciones:</strong> El monto de ${fmt(inv.amount)} es fijo. El adelanto de ${fmt(8000)} debe pagarse antes de la cita.</div>
     </div>
-
-    <div style="margin:14px 0 10px;font-weight:600;font-size:13px;color:#0f4c81">🤖 Mejorar con IA</div>
-    <div style="position:relative">
-      <textarea id="ai-doc-input" placeholder="Describe las fugas... o usa el micrófono 🎤" style="width:100%;padding:8px 40px 8px 8px;border-radius:7px;border:1px solid #cbd5e1;font-size:13px;min-height:70px;font-family:inherit"></textarea>
-      <button onclick="startMic('ai-doc-input')" style="position:absolute;right:6px;top:6px;background:none;border:none;cursor:pointer;font-size:20px" title="Hablar">🎤</button>
-    </div>
-    <div class="btn-group" style="margin-top:8px">
-      <button class="btn btn-primary btn-sm" onclick="askAIDoc('${iid}')">🤖 Generar descripción</button>
-      <span id="mic-status-doc" style="font-size:11px;color:#64748b"></span>
-    </div>
-    <div id="ai-doc-result-${inv.id}" style="display:none;margin-top:10px;padding:10px;background:#f0f9ff;border-radius:7px;border:1px solid #93c5fd;font-size:13px;line-height:1.6;color:#1e40af;white-space:pre-wrap"></div>
-
-    <div clabtn-group" style="margin-top:14px">
-      <button class="btn btn-success" id="btn-wa-modal" onclick="sendWAModal()">📲 Enviar por WhatsApp</button>
-      <button class="btn btn-primary" id="btn-sign-modal" onclick="markSignedModal()">✅ Marcar confirmado</button>
+    <div class="btn-group" style="margin-top:14px">
+      <button class="btn btn-success" onclick="sendWAModal()">📲 Enviar por WhatsApp</button>
       <button class="btn" onclick="closeModal()">Cerrar</button>
     </div>`;
   document.getElementById('modal-doc').style.display='flex';
 }
 
 function closeModal() { document.getElementById('modal-doc').style.display='none'; }
-
-function sendWAModal() { sendWA(window._modalInvId); closeModal(); }
-function markSignedModal() { markSigned(window._modalInvId); closeModal(); }
-function sendWA(id) {
-  const inv = invoices.find(i=>i.id===id); if(!inv) return;
-  inv.waSent = true; syncAll();
-  showToast('📲 Enviado por WhatsApp');
-}
-
-function markSigned(id) {
-  const inv = invoices.find(i=>i.id===id); if(!inv) return;
-  inv.signed = true; syncAll();
-  showToast('✅ '+inv.client+' confirmó el documento');
-}
-
-// ═══════════════════════ IA — DOCUMENTOS ═══════════════════════
-async function askAIDoc(invId) {
-  const q = document.getElementById('ai-doc-input').value.trim();
-  if(!q) { showToast('Describe las fugas primero','d'); return; }
-  const inv = invoices.find(i=>i.id===invId);
-  const btn = event.target;
-  btn.textContent = '⏳ Generando...'; btn.disabled = true;
-  try {
-    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        system:'Eres el redactor técnico de Cazador de Fugas, empresa de detección y reparación de fugas en Santo Domingo. Redacta descripciones profesionales y concisas para facturas/cotizaciones en español. Usa terminología técnica apropiada. Formato: párrafo corto, profesional, en tercera persona.',
-        messages:[{role:'user', content:'Redacta la descripción del servicio para este documento:\n\nCliente: '+(inv?.client||'')+'\nEquipo: '+(TEAMS[inv?.team]?.label||'')+'\n\nDescripción del técnico: '+q+'\n\nRedacta 2-3 oraciones profesionales describiendo el trabajo realizado.'}]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'Error al generar';
-    const el = document.getElementById('ai-doc-result-'+invId);
-    el.style.display='block'; el.textContent = text;
-    if(inv) inv.desc = text;
-  } catch(e) {
-    showToast('Error de conexión con IA','d');
-  } finally {
-    btn.textContent='🤖 Generar descripción'; btn.disabled=false;
-  }
+function sendWAModal() {
+  const inv = invoices.find(i=>i.id===window._modalInvId);
+  if(inv) { inv.waSent=true; syncAll(); showToast('📲 Enviado por WhatsApp'); }
+  closeModal();
 }
 
 // ═══════════════════════ IA — ESTADÍSTICAS ═══════════════════════
@@ -1193,18 +1098,14 @@ async function askAIStats() {
   if(!q) { showToast('Escribe tu consulta primero','d'); return; }
   const el = document.getElementById('ai-stats-r');
   el.style.display='block'; el.textContent='⏳ Consultando...';
-
-  const ctx = 'Datos del CRM Cazador de Fugas:\n'+
-    'Clientes: '+JSON.stringify(clients.map(c=>(Object.assign({},{name:c.name,team:c.team,status:c.status,fugas:c.fugas,paid8k:c.paid8k,paidFull:c.paidFull}))))+
-    '\nFacturas: '+JSON.stringify(invoices.map(i=>(Object.assign({},{client:i.client,team:i.team,type:i.type,amount:i.amount,paid:i.paid,status:i.status}))))+
-    '\nEmpleados: '+JSON.stringify(empleados.map(e=>(Object.assign({},{name:e.name,role:e.role,team:e.team,obras:e.obras,cobradas:e.cobradas}))));
-
+  const ctx = 'Datos del CRM Cazador de Fugas:\nClientes: '+JSON.stringify(clients.map(c=>({name:c.name,team:c.team,status:c.status,fugas:c.fugas,pago1:c.pago1,pago2:c.pago2,pago3:c.pago3})))+'\nEmpleados: '+JSON.stringify(empleados.map(e=>({name:e.name,role:e.role,team:e.team,obras:e.obras,cobradas:e.cobradas})));
   try {
-    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
+    const res = await fetch(SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        system:'Eres el analista de datos de Cazador de Fugas. Responde preguntas sobre los datos del CRM de forma clara, concisa y en español. Da números exactos cuando los tengas. Máximo 150 palabras.',
+        action:'ai',
+        system:'Eres el analista de datos de Cazador de Fugas. Responde preguntas sobre los datos del CRM de forma clara y concisa en español. Máximo 150 palabras.',
         messages:[{role:'user', content:ctx+'\n\nPregunta: '+q}]
       })
     });
@@ -1217,22 +1118,23 @@ async function askAIStats() {
 
 // ═══════════════════════ ESTADÍSTICAS ═══════════════════════
 function renderStats() {
-  const totalCA = invoices.filter(i=>i.status==='pagada').reduce((a,i)=>a+i.amount,0);
-  const totalObras = invoices.length;
-  const tasa = totalObras ? Math.round(invoices.filter(i=>i.status==='pagada').length/totalObras*100) : 0;
+  const totalCA = clients.reduce((a,c)=>a+(c.pago1||0)+(c.pago2||0)+(c.pago3||0),0);
+  const totalObras = clients.length;
+  const terminados = clients.filter(c=>c.status==='pagado').length;
+  const tasa = totalObras ? Math.round(terminados/totalObras*100) : 0;
   document.getElementById('stats-kpis').innerHTML = [
-    {l:'Total obras',v:totalObras,s:'este mes'},
-    {l:'CA total cobrado',v:fmt(totalCA),s:'obras pagadas'},
-    {l:'Tasa de cobro global',v:tasa+'%',s:'obras cobradas/total',cls:tasa>=80?'':tasa>=60?'warning':'danger'},
+    {l:'Total clientes',v:totalObras,s:'registrados'},
+    {l:'Total cobrado',v:fmt(totalCA),s:'suma de todos los pagos'},
+    {l:'Tasa terminados',v:tasa+'%',s:'clientes terminados/total',cls:tasa>=80?'':tasa>=60?'warning':'danger'},
     {l:'Blacklist',v:blacklist.length+' registros',s:'clientes problemáticos'},
   ].map(k=>`<div class="kpi ${k.cls||''}"><div class="lbl">${k.l}</div><div class="val">${k.v}</div><div class="sub">${k.s}</div></div>`).join('');
 
   const ts = Object.entries(TEAMS).map(([id,t])=>{
-    const obras=invoices.filter(i=>i.team===id);
-    const ok=obras.filter(i=>i.status==='pagada');
-    const ca=ok.reduce((a,i)=>a+i.amount,0);
-    const tasa=obras.length?Math.round(ok.length/obras.length*100):0;
-    return {...t,id,obras:obras.length,ok:ok.length,ca,tasa};
+    const cls_c=clients.filter(c=>c.team===id);
+    const ca=cls_c.reduce((a,c)=>a+(c.pago1||0)+(c.pago2||0)+(c.pago3||0),0);
+    const ok=cls_c.filter(c=>c.status==='pagado').length;
+    const tasa=cls_c.length?Math.round(ok/cls_c.length*100):0;
+    return {...t,id,obras:cls_c.length,ok,ca,tasa};
   }).sort((a,b)=>b.ca-a.ca);
   const maxCA=ts[0]?.ca||1;
   const medals=['🥇','🥈','🥉','4️⃣'];
@@ -1244,7 +1146,7 @@ function renderStats() {
       </div>
       <div class="bar-track" style="height:6px;margin-bottom:8px"><div class="bar-fill" style="width:${Math.round(t.ca/maxCA*100)}%;background:${t.color}"></div></div>
       <div style="display:flex;gap:18px;font-size:12px;color:#64748b">
-        <span>📋 ${t.obras} obras</span><span>✅ ${t.ok} cobradas</span>
+        <span>📋 ${t.obras} clientes</span><span>✅ ${t.ok} terminados</span>
         <span>Tasa: <span class="${t.tasa>=80?'tasa-good':t.tasa>=60?'tasa-mid':'tasa-bad'}">${t.tasa}%</span></span>
       </div>
     </div>`).join('');
@@ -1277,7 +1179,6 @@ function renderEmpleados() {
       <div class="bar-track" style="height:5px;margin-bottom:8px"><div class="bar-fill" style="width:${tasa}%;background:${tasa>=85?'#15803d':tasa>=70?'#d97706':'#dc2626'}"></div></div>
       <div style="font-size:12px;color:#64748b;display:flex;gap:16px">
         <span>📋 ${e.obras} obras</span><span>✅ ${e.cobradas} cobradas</span>
-        <span>🔄 ${e.history.map(h=>TEAMS[h]?.label||h).join(' → ')}</span>
       </div>
     </div>`;
   }).join('');
@@ -1285,9 +1186,9 @@ function renderEmpleados() {
   const empRows = Object.entries(TEAMS).map(([id,t])=>{
     const jefe=empleados.find(e=>e.team===id&&e.role==='jefe');
     const ayud=empleados.find(e=>e.team===id&&e.role==='ayudante');
-    const obras=invoices.filter(i=>i.team===id).length;
-    const cobradas=invoices.filter(i=>i.team===id&&i.status==='pagada').length;
-    const tasa=obras?Math.round(cobradas/obras*100):0;
+    const obras=clients.filter(c=>c.team===id).length;
+    const terminados=clients.filter(c=>c.team===id&&c.status==='pagado').length;
+    const tasa=obras?Math.round(terminados/obras*100):0;
     return `<tr><td><span class="badge ${t.cls}">${t.label}</span></td><td style="font-weight:600">👑 ${jefe?.name||'—'}</td><td>${ayud?.name||'—'}</td><td>${obras}</td><td><span class="${tasa>=80?'tasa-good':tasa>=60?'tasa-mid':'tasa-bad'}">${tasa}%</span></td></tr>`;
   }).join('');
   document.getElementById('emp-equipos-tbody').innerHTML = empRows;
@@ -1312,85 +1213,23 @@ function updateEquipo() {
   showToast('✅ Equipo actualizado'); toggleForm('form-equipo'); renderEmpleados();
 }
 
-// ═══════════════════════ MODAL MOBILE ═══════════════════════
-function eliminarCliente() {
-  if(!selectedClientId) return;
-  const c = clients.find(cl=>cl.id===selectedClientId);
-  if(!c) return;
-  if(confirm('¿Eliminar a ' + c.name + '? Esta acción no se puede deshacer.')) {
-    clients = clients.filter(cl=>cl.id!==selectedClientId);
-    invoices = invoices.filter(i=>i.client!==c.name);
-    syncAll();
-    renderClients();
-    renderDashboard();
-    showToast('🗑 ' + c.name + ' eliminado');
-    deselect();
-  }
-}
-
+// ═══════════════════════ MOBILE ═══════════════════════
 let _mobileClientId = null;
-let _editClientId = null;
 
-function openEditModal(clientId) {
+function openMobileModal(clientId) {
+  if(window.innerWidth > 768) return false;
   const c = clients.find(cl=>cl.id===clientId);
-  if(!c) return;
-  _editClientId = clientId;
-  document.getElementById('ec-name').value   = c.name||'';
-  document.getElementById('ec-phone').value  = c.phone||'';
-  document.getElementById('ec-tower').value  = c.tower||'';
-  document.getElementById('ec-team').value   = c.team||'rojo';
-  document.getElementById('ec-date').value   = c.date||'';
-  document.getElementById('ec-time').value   = c.time||'09:00';
-  document.getElementById('ec-notes').value  = c.notes||'';
-  document.getElementById('ec-fugas').value  = c.fugas||0;
-  document.getElementById('ec-pago1').value  = c.pago1||0;
-  document.getElementById('ec-pago2').value  = c.pago2||0;
-  document.getElementById('ec-pago3').value  = c.pago3||0;
-  document.getElementById('ec-status').value = c.status||'pendiente';
-  document.getElementById('modal-edit-cliente').style.display = 'flex';
+  if(!c) return false;
+  _mobileClientId = clientId;
+  document.getElementById('mobile-modal-title').textContent = '📋 ' + c.name;
+  document.getElementById('mobile-btn-yerald').href = gcalUrl(c,'yerald');
+  document.getElementById('mobile-btn-alex').href = gcalUrl(c,'alex');
+  document.getElementById('modal-acciones-mobile').style.display = 'flex';
+  return true;
 }
 
-function closeEditModal() {
-  document.getElementById('modal-edit-cliente').style.display = 'none';
-  _editClientId = null;
-}
-
-function saveEditCliente() {
-  if(!_editClientId) return;
-  const c = clients.find(cl=>cl.id===_editClientId);
-  if(!c) return;
-  c.name   = document.getElementById('ec-name').value.trim();
-  c.phone  = document.getElementById('ec-phone').value.trim();
-  c.tower  = document.getElementById('ec-tower').value.trim();
-  c.team   = document.getElementById('ec-team').value;
-  c.date   = document.getElementById('ec-date').value;
-  c.time   = document.getElementById('ec-time').value;
-  c.notes  = document.getElementById('ec-notes').value;
-  c.fugas  = Number(document.getElementById('ec-fugas').value)||0;
-  c.pago1  = Number(document.getElementById('ec-pago1').value)||0;
-  c.pago2  = Number(document.getElementById('ec-pago2').value)||0;
-  c.pago3  = Number(document.getElementById('ec-pago3').value)||0;
-  c.status = document.getElementById('ec-status').value;
-  syncAll(); renderClients(); renderDashboard();
-  showToast('✅ Cliente actualizado');
-  closeEditModal();
-}
-
-function addToBlacklist() {
-  if(!_editClientId) return;
-  const c = clients.find(cl=>cl.id===_editClientId);
-  if(!c) return;
-  if(confirm('¿Agregar a ' + c.name + ' a la Blacklist?')) {
-    blacklist.unshift({
-      id:'bl'+Date.now(), name:c.name, phone:c.phone, tower:c.tower,
-      amount:(c.pago1||0)+(c.pago2||0)+(c.pago3||0),
-      reason:'En disputa', date:new Date().toISOString().slice(0,10)
-    });
-    c.status = 'disputa';
-    syncAll(); renderClients(); renderDashboard(); renderBL();
-    showToast('🚫 '+c.name+' agregado a Blacklist');
-    closeEditModal();
-  }
+function closeMobileModal() {
+  document.getElementById('modal-acciones-mobile').style.display = 'none';
 }
 
 function eliminarClienteMobile() {
@@ -1401,67 +1240,28 @@ function eliminarClienteMobile() {
   if(confirm('¿Eliminar a ' + c.name + '?')) {
     clients = clients.filter(cl=>cl.id!==_mobileClientId);
     invoices = invoices.filter(i=>i.client!==c.name);
-    syncAll();
-    renderClients();
-    renderDashboard();
+    marcarCambios();
+    renderClients(); renderDashboard();
     showToast('🗑 ' + c.name + ' eliminado');
   }
-}
-
-function openMobileModal(clientId) {
-  if(window.innerWidth > 768) return false; // Solo en mobile
-  const c = clients.find(cl=>cl.id===clientId);
-  if(!c) return false;
-  _mobileClientId = clientId;
-  document.getElementById('mobile-modal-title').textContent = '📋 ' + c.name;
-  document.getElementById('mobile-btn-yerald').href = gcalUrl(c,'yerald');
-  document.getElementById('mobile-btn-alex').href = gcalUrl(c,'alex');
-  const modal = document.getElementById('modal-acciones-mobile');
-  modal.style.display = 'flex';
-  return true;
-}
-
-function closeMobileModal() {
-  document.getElementById('modal-acciones-mobile').style.display = 'none';
 }
 
 // ═══════════════════════ MICRÓFONO ═══════════════════════
 function startMic(targetId) {
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('Tu navegador no soporta reconocimiento de voz. Usa Chrome.', 'd');
-    return;
+    showToast('Tu navegador no soporta reconocimiento de voz. Usa Chrome.', 'd'); return;
   }
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
-  recognition.lang = 'es-DO';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  const statusId = targetId === 'ai-doc-input' ? 'mic-status-doc' : 'mic-status-stats';
-  const statusEl = document.getElementById(statusId);
-
-  recognition.onstart = () => {
-    if(statusEl) statusEl.textContent = '🔴 Escuchando...';
-    showToast('🎤 Habla ahora...', 'w');
-  };
-
+  recognition.lang = 'es-DO'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.onstart = () => showToast('🎤 Habla ahora...', 'w');
   recognition.onresult = (e) => {
     const transcript = e.results[0][0].transcript;
     const el = document.getElementById(targetId);
     if(el) el.value = (el.value ? el.value + ' ' : '') + transcript;
-    if(statusEl) statusEl.textContent = '✅ Transcrito';
     showToast('✅ Voz transcrita correctamente');
   };
-
-  recognition.onerror = (e) => {
-    if(statusEl) statusEl.textContent = '';
-    showToast('Error de micrófono: ' + e.error, 'd');
-  };
-
-  recognition.onend = () => {
-    if(statusEl) setTimeout(() => { statusEl.textContent = ''; }, 2000);
-  };
-
+  recognition.onerror = (e) => showToast('Error de micrófono: ' + e.error, 'd');
   recognition.start();
 }
 
