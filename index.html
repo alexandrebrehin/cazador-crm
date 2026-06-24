@@ -208,6 +208,7 @@ textarea{resize:vertical;min-height:65px}
         <button class="btn btn-sm" style="background:#F3E8FF;border-color:#C084FC;color:#7E22CE" onclick="crearDoc('recibo')">💳 Recibo</button>
         <button class="btn btn-sm" style="background:#FFF7ED;border-color:#FED7AA;color:#c2410c" onclick="marcarDisputa()">⚠️ En disputa</button>
         <button class="btn btn-success btn-sm" onclick="marcarPagado()">✅ Pagado</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarCliente()">🗑 Eliminar</button>
         <button class="btn btn-sm" onclick="deselect()">✕</button>
       </div>
     </div>
@@ -368,6 +369,7 @@ textarea{resize:vertical;min-height:65px}
       <a id="mobile-btn-yerald" href="#" target="_blank" style="padding:14px;border-radius:10px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:15px;font-weight:600;text-decoration:none;text-align:center">👷 Agregar Yerald</a>
       <a id="mobile-btn-alex" href="#" target="_blank" style="padding:14px;border-radius:10px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:15px;font-weight:600;text-decoration:none;text-align:center">👔 Agregar Alexandre</a>
       <a href="https://drive.google.com/drive/folders/1O5Muv0YYJZqptMY6KWvoldTfI-S6OWF4" target="_blank" style="padding:14px;border-radius:10px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:15px;font-weight:600;text-decoration:none;text-align:center">📁 Fotos de la obra</a>
+      <button onclick="eliminarClienteMobile()" style="padding:12px;border-radius:10px;border:1px solid #fca5a5;background:#fee2e2;font-size:14px;cursor:pointer;color:#dc2626;font-weight:600">🗑 Eliminar cliente</button>
       <button onclick="closeMobileModal()" style="padding:12px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:14px;cursor:pointer;color:#64748b">Cancelar</button>
     </div>
   </div>
@@ -524,6 +526,14 @@ function pinPress(n) {
   updatePinDisplay();
   if(pinBuffer.length === 4) setTimeout(checkPin, 200);
 }
+
+// Keyboard support for PIN
+document.addEventListener('keydown', function(e) {
+  if(document.getElementById('login-wrap').style.display === 'none') return;
+  if(e.key >= '0' && e.key <= '9') pinPress(parseInt(e.key));
+  else if(e.key === 'Backspace') pinDel();
+  else if(e.key === 'Escape') pinClear();
+});
 
 function pinDel() {
   pinBuffer = pinBuffer.slice(0,-1);
@@ -1215,10 +1225,43 @@ function updateEquipo() {
 }
 
 // ═══════════════════════ MODAL MOBILE ═══════════════════════
+function eliminarCliente() {
+  if(!selectedClientId) return;
+  const c = clients.find(cl=>cl.id===selectedClientId);
+  if(!c) return;
+  if(confirm('¿Eliminar a ' + c.name + '? Esta acción no se puede deshacer.')) {
+    clients = clients.filter(cl=>cl.id!==selectedClientId);
+    invoices = invoices.filter(i=>i.client!==c.name);
+    syncAll();
+    renderClients();
+    renderDashboard();
+    showToast('🗑 ' + c.name + ' eliminado');
+    deselect();
+  }
+}
+
+let _mobileClientId = null;
+
+function eliminarClienteMobile() {
+  if(!_mobileClientId) return;
+  const c = clients.find(cl=>cl.id===_mobileClientId);
+  if(!c) return;
+  closeMobileModal();
+  if(confirm('¿Eliminar a ' + c.name + '?')) {
+    clients = clients.filter(cl=>cl.id!==_mobileClientId);
+    invoices = invoices.filter(i=>i.client!==c.name);
+    syncAll();
+    renderClients();
+    renderDashboard();
+    showToast('🗑 ' + c.name + ' eliminado');
+  }
+}
+
 function openMobileModal(clientId) {
   if(window.innerWidth > 768) return false; // Solo en mobile
   const c = clients.find(cl=>cl.id===clientId);
   if(!c) return false;
+  _mobileClientId = clientId;
   document.getElementById('mobile-modal-title').textContent = '📋 ' + c.name;
   document.getElementById('mobile-btn-yerald').href = gcalUrl(c,'yerald');
   document.getElementById('mobile-btn-alex').href = gcalUrl(c,'alex');
