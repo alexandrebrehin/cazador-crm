@@ -1015,7 +1015,7 @@ async function askAIDoc(invId) {
   const btn = event.target;
   btn.textContent = '⏳ Generando...'; btn.disabled = true;
   try {
-    const res = await fetch('https://script.google.com/macros/s/AKfycbx602i_opMBkhjsnYu_lF5B9jwHUsJB_OdSkGiKobyl-0nbAixDdBrFaOnVH4H7Ry8L/exec', {
+    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1048,7 +1048,7 @@ async function askAIStats() {
     '\nEmpleados: '+JSON.stringify(empleados.map(e=>(Object.assign({},{name:e.name,role:e.role,team:e.team,obras:e.obras,cobradas:e.cobradas}))));
 
   try {
-    const res = await fetch('https://script.google.com/macros/s/AKfycbx602i_opMBkhjsnYu_lF5B9jwHUsJB_OdSkGiKobyl-0nbAixDdBrFaOnVH4H7Ry8L/exec', {
+    const res = await fetch('https://script.google.com/macros/s/AKfycby8_QM2vyuh9Lz2gS17sb20EC7XlHv0wpKsJZc0OAUDv9mCjKbY5vgo3hydD6EX6lie/exec', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
