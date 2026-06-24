@@ -265,7 +265,7 @@ textarea{resize:vertical;min-height:65px}
     <table>
       <thead><tr>
         <th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
-        <th>Fecha cita</th><th style='text-align:center'>1er pago</th><th style='text-align:center'>2do pago</th><th style='text-align:center'>3er pago</th><th>Acciones</th>
+        <th>Fecha cita</th><th style='text-align:center'>1er pago</th><th style='text-align:center'>2do pago</th><th style='text-align:center'>3er pago</th><th style='text-align:center'>✅ Ya pagado</th><th>Acciones</th>
       </tr></thead>
       <tbody id="clients-tbody"></tbody>
     </table>
@@ -440,10 +440,10 @@ const NAV_LABELS = {
 
 // ═══════════════════════ DATOS ═══════════════════════
 const TEAMS = {
-  rojo:     {label:'Los Rojos',    color:'#dc2626',bg:'#fee2e2',cls:'team-rojo'},
-  azul:     {label:'Los Azules',   color:'#1d4ed8',bg:'#dbeafe',cls:'team-azul'},
-  verde:    {label:'Los Verdes',   color:'#15803d',bg:'#dcfce7',cls:'team-verde'},
-  amarillo: {label:'Los Amarillos',color:'#92400e',bg:'#fef9c3',cls:'team-amarillo'},
+  rojo:     {label:'Los Rojos',    color:'#c53030',bg:'#fff5f5',cls:'team-rojo'},
+  azul:     {label:'Los Azules',   color:'#2b6cb0',bg:'#ebf8ff',cls:'team-azul'},
+  verde:    {label:'Los Verdes',   color:'#276749',bg:'#f0fff4',cls:'team-verde'},
+  amarillo: {label:'Los Amarillos',color:'#b7791f',bg:'#fffff0',cls:'team-amarillo'},
 };
 
 let currentUser = null;
@@ -789,10 +789,10 @@ function renderDashboard() {
 
   // Tabla compacta
   const TC = {
-    rojo:     {dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},
-    azul:     {dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},
-    verde:    {dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},
-    amarillo: {dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'},
+    rojo:     {dk:'#e53e3e',lt:'#fff5f5',td:'#c53030',bd:'#fc8181'},
+    azul:     {dk:'#3182ce',lt:'#ebf8ff',td:'#2b6cb0',bd:'#90cdf4'},
+    verde:    {dk:'#38a169',lt:'#f0fff4',td:'#276749',bd:'#9ae6b4'},
+    amarillo: {dk:'#d69e2e',lt:'#fffff0',td:'#b7791f',bd:'#faf089'},
   };
   const sorted = [...clients].reverse();
   const rows = sorted.map(c => {
@@ -816,10 +816,10 @@ function renderDashboard() {
 function renderClients() {
   const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
   const TC2 = {
-    rojo:     {dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},
-    azul:     {dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},
-    verde:    {dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},
-    amarillo: {dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'},
+    rojo:     {dk:'#e53e3e',lt:'#fff5f5',td:'#c53030',bd:'#fc8181'},
+    azul:     {dk:'#3182ce',lt:'#ebf8ff',td:'#2b6cb0',bd:'#90cdf4'},
+    verde:    {dk:'#38a169',lt:'#f0fff4',td:'#276749',bd:'#9ae6b4'},
+    amarillo: {dk:'#d69e2e',lt:'#fffff0',td:'#b7791f',bd:'#faf089'},
   };
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
     const tc  = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
@@ -846,6 +846,9 @@ function renderClients() {
       +'<td style="'+s+';text-align:center">'+pagoInput('pago1',c.pago1)+'</td>'
       +'<td style="'+s+';text-align:center">'+pagoInput('pago2',c.pago2)+'</td>'
       +'<td style="'+s+';text-align:center">'+pagoInput('pago3',c.pago3)+'</td>'
+      +'<td style="'+s+';text-align:center;font-weight:700;color:'+col+'">'
+        +((c.pago1||0)+(c.pago2||0)+(c.pago3||0)).toLocaleString('es-DO')
+      +'</td>'
       +'<td style="'+s+'">'
         +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
           +'<a href="'+gcalUrl(c,'yerald')+'" target="_blank" onclick="event.stopPropagation()" style="padding:4px 7px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none">👷</a>'
