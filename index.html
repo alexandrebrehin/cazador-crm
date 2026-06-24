@@ -219,6 +219,17 @@ textarea{resize:vertical;min-height:65px}
     <button class="btn btn-primary" onclick="toggleForm('form-cliente')">+ Nuevo cliente</button>
   </div>
 
+  <!-- Botones calendario - fuera del formulario para que no desaparezcan -->
+  <div id="gcal-buttons-container" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;color:#15803d;margin-bottom:10px">📅 Cliente guardado — Abre el calendario:</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a id="gcal-btn-equipo" href="#" target="_blank" style="padding:8px 14px;border-radius:7px;border:1px solid #86efac;background:#dcfce7;color:#15803d;font-size:13px;font-weight:600;text-decoration:none">📅 Cita equipo</a>
+      <a id="gcal-btn-yerald" href="#" target="_blank" style="padding:8px 14px;border-radius:7px;border:1px solid #C084FC;background:#F3E8FF;color:#7E22CE;font-size:13px;font-weight:600;text-decoration:none">👷 +Yerald</a>
+      <a id="gcal-btn-alex" href="#" target="_blank" style="padding:8px 14px;border-radius:7px;border:1px solid #7DD3FC;background:#E0F2FE;color:#0369A1;font-size:13px;font-weight:600;text-decoration:none">👔 +Alexandre</a>
+      <button onclick="document.getElementById('gcal-buttons-container').style.display='none'" style="padding:8px 14px;border-radius:7px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:12px;cursor:pointer">✕ Cerrar</button>
+    </div>
+  </div>
+
   <div id="form-cliente" class="card-form" style="display:none">
     <div style="font-weight:600;margin-bottom:12px;color:#0f4c81">Agregar nuevo cliente</div>
     <div class="form-grid g3">
@@ -246,9 +257,7 @@ textarea{resize:vertical;min-height:65px}
     <div class="btn-group">
       <button class="btn btn-primary" onclick="saveClient()">✅ Guardar y generar cita</button>
       <button class="btn" onclick="toggleForm('form-cliente')">Cancelar</button>
-      <a id="gcal-btn-equipo" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #86efac;background:#dcfce7;color:#15803d;font-size:12px;font-weight:600;text-decoration:none">📅 Cita equipo</a>
-      <a id="gcal-btn-yerald" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #C084FC;background:#F3E8FF;color:#7E22CE;font-size:12px;font-weight:600;text-decoration:none">👷 +Yerald</a>
-      <a id="gcal-btn-alex" href="#" target="_blank" style="display:none;padding:7px 12px;border-radius:7px;border:1px solid #7DD3FC;background:#E0F2FE;color:#0369A1;font-size:12px;font-weight:600;text-decoration:none">👔 +Alexandre</a>
+
     </div>
   </div>
 
@@ -256,7 +265,7 @@ textarea{resize:vertical;min-height:65px}
     <table>
       <thead><tr>
         <th>Cliente</th><th>Teléfono</th><th>Torre / Dir.</th><th>Equipo</th>
-        <th>Fecha cita</th><th>Adelanto</th><th>Estado</th><th>Acciones</th>
+        <th>Fecha cita</th><th style='text-align:center'>1er pago</th><th style='text-align:center'>2do pago</th><th style='text-align:center'>3er pago</th><th>Acciones</th>
       </tr></thead>
       <tbody id="clients-tbody"></tbody>
     </table>
@@ -442,10 +451,10 @@ let selectedClientId = null;
 let pinBuffer = '';
 
 let clients = [
-  {id:'c1',name:'Ana Rodríguez',phone:'8294410021',tower:'Apt 3C, Naco',team:'rojo',date:'2025-06-25',time:'09:00',notes:'Fuga cocina',fugas:1,paid8k:true,paidFull:true,status:'pagado'},
-  {id:'c2',name:'Carlos Méndez',phone:'8093127788',tower:'Torre Piantini B2',team:'azul',date:'2025-06-27',time:'10:00',notes:'Humedad pared',fugas:0,paid8k:false,paidFull:false,status:'pendiente'},
-  {id:'c3',name:'Luis Guerrero',phone:'8492205511',tower:'Urb. Real Apt 7',team:'verde',date:'2025-06-24',time:'08:30',notes:'Fuga baño',fugas:2,paid8k:true,paidFull:false,status:'debe'},
-  {id:'c4',name:'María Santos',phone:'8091234567',tower:'Res. La Esperanza',team:'amarillo',date:'2025-06-29',time:'11:00',notes:'Filtración terraza',fugas:0,paid8k:false,paidFull:false,status:'pendiente'},
+  {id:'c1',name:'Ana Rodríguez',phone:'8294410021',tower:'Apt 3C, Naco',team:'rojo',date:'2025-06-25',time:'09:00',notes:'Fuga cocina',fugas:1,pago1:8000,pago2:15000,pago3:0,status:'pagado'},
+  {id:'c2',name:'Carlos Méndez',phone:'8093127788',tower:'Torre Piantini B2',team:'azul',date:'2025-06-27',time:'10:00',notes:'Humedad pared',fugas:0,pago1:0,pago2:0,pago3:0,status:'pendiente'},
+  {id:'c3',name:'Luis Guerrero',phone:'8492205511',tower:'Urb. Real Apt 7',team:'verde',date:'2025-06-24',time:'08:30',notes:'Fuga baño',fugas:2,pago1:8000,pago2:10000,pago3:0,status:'pendiente'},
+  {id:'c4',name:'María Santos',phone:'8091234567',tower:'Res. La Esperanza',team:'amarillo',date:'2025-06-29',time:'11:00',notes:'Filtración terraza',fugas:0,pago1:0,pago2:0,pago3:0,status:'pendiente'},
 ];
 
 let invoices = [
@@ -478,7 +487,8 @@ const daysUntil = d => Math.ceil((new Date(d) - new Date()) / 86400000);
 
 // Normalizar sin acentos y sin espacios (para blacklist)
 function normalize(s) {
-  return (s||'').toLowerCase()
+  if(typeof s !== 'string') s = String(s||'');
+  return s.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[\s\-\.]/g,'');
 }
@@ -665,7 +675,7 @@ async function loadFromSheets(sheetName) {
 }
 
 async function syncAll() {
-  await saveToSheets('Clientes', clients.map(c=>([c.id,c.name,c.phone,c.tower,c.team,c.date,c.time||'',c.notes||'',c.fugas||0,c.paid8k?'SI':'NO',c.paidFull?'SI':'NO',c.status])));
+  await saveToSheets('Clientes', clients.map(c=>([c.id,c.name,c.phone,c.tower,c.team,c.date,c.time||'',c.notes||'',c.fugas||0,c.pago1||0,c.pago2||0,c.pago3||0,c.status])));
   await saveToSheets('Facturas', invoices.map(i=>([i.id,i.client,i.team,i.type,i.amount,i.paid,i.date,i.status,i.signed?'SI':'NO',i.waSent?'SI':'NO',i.desc||''])));
   await saveToSheets('Blacklist', blacklist.map(b=>([b.id,b.name||'',b.phone||'',b.tower||'',b.amount||0,b.reason||'',b.date])));
 }
@@ -679,7 +689,8 @@ function initFromSheets() {
         const loaded = cls.slice(1).filter(r=>r[0]).map(r=>({
           id:r[0],name:r[1],phone:r[2],tower:r[3],team:r[4],
           date:r[5],time:r[6]||'09:00',notes:r[7]||'',fugas:Number(r[8])||0,
-          paid8k:r[9]==='SI',paidFull:r[10]==='SI',status:r[11]||'pendiente'
+          pago1:Number(r[9])||0,pago2:Number(r[10])||0,pago3:Number(r[11])||0,
+          status:r[12]||'pendiente'
         }));
         if(loaded.length) clients = loaded;
       }
@@ -802,25 +813,45 @@ function renderDashboard() {
 function renderClients() {
   const list = currentUser?.role==='jefe' ? clients.filter(c=>c.team===currentUser.team) : clients;
   document.getElementById('clients-tbody').innerHTML = list.map(c => {
+    const TC2 = {rojo:{dk:'#b91c1c',lt:'#fff1f1',td:'#7f1d1d',bd:'#fca5a5'},azul:{dk:'#1e40af',lt:'#eff6ff',td:'#1e3a8a',bd:'#93c5fd'},verde:{dk:'#166534',lt:'#f0fdf4',td:'#14532d',bd:'#86efac'},amarillo:{dk:'#92400e',lt:'#fffbeb',td:'#78350f',bd:'#fde68a'}};
+    const tc = TC2[c.team]||{dk:'#475569',lt:'#f8fafc',td:'#334155',bd:'#e2e8f0'};
+    const fin = c.status==='pagado';
+    const dis = c.status==='disputa';
+    const bg  = dis?'#FFF7ED':fin?tc.lt:tc.dk;
+    const col = dis?'#92400e':fin?tc.td:'#fff';
+    const sub = dis?'#92400e':fin?tc.td+'bb':'rgba(255,255,255,0.8)';
+    const bd  = dis?'#FDE68A':tc.bd;
     const d = daysUntil(c.date);
-    const late = !c.paid8k && d<=2 && d>=0;
-    return `<tr style="cursor:pointer" onclick="if(!openMobileModal('${c.id}'))selectClient('${c.id}')">
-      <td style="font-weight:600">${c.name}${late?' <span class="badge badge-yellow" style="font-size:10px">⏰</span>':''}</td>
-      <td>${c.phone}</td>
-      <td style="font-size:12px;color:#64748b">${c.tower}</td>
-      <td>${teamBadge(c.team)}</td>
-      <td style="font-size:12px">${c.date} ${c.time||''}</td>
-      <td>${c.paid8k?'<span class="badge badge-green">✅</span>':'<span class="badge badge-yellow">⏳</span>'}</td>
-      <td>${statusBadge(c.status)}</td>
-      <td>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <a href="${gcalUrl(c,'yerald')}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">👷</a>
-          <a href="${gcalUrl(c,'alex')}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">👔</a>
-          <a href="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}" target="_blank" style="padding:4px 8px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap">📁</a>
-        </div>
-      </td>
-    </tr>`;
+    const inp = (fld,val) => '<input type="number" value="'+(val||0)+'" min="0" style="width:75px;padding:3px 5px;border-radius:5px;border:1px solid '+bd+';background:rgba(255,255,255,0.25);color:'+col+';font-size:12px;text-align:center" onchange="updatePago(''+c.id+'',''+fld+'',this.value)" onclick="event.stopPropagation()">';
+    return '<tr style="background:'+bg+';cursor:pointer" onclick="if(!openMobileModal(''+c.id+''))selectClient(''+c.id+'')">'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-weight:600;color:'+col+';white-space:nowrap">'+c.name+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.phone+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.tower+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+'">'+teamBadge(c.team)+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';font-size:12px;color:'+sub+'">'+c.date+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago1',c.pago1)+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago2',c.pago2)+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+';text-align:center">'+inp('pago3',c.pago3)+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid '+bd+'">'
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
+          +'<a href="'+gcalUrl(c,'yerald')+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#F3E8FF;border:1px solid #C084FC;color:#7E22CE;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">👷</a>'
+          +'<a href="'+gcalUrl(c,'alex')+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#0369A1;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">👔</a>'
+          +'<a href="https://drive.google.com/drive/folders/'+DRIVE_FOLDER_ID+'" target="_blank" style="padding:4px 7px;border-radius:6px;background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:11px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">📁</a>'
+        +'</div>'
+      +'</td>'
+      +'</tr>';
   }).join('');
+}
+
+function updatePago(clientId, field, value) {
+  const c = clients.find(cl=>cl.id===clientId);
+  if(!c) return;
+  c[field] = Number(value)||0;
+  // Auto-set status to pagado if all payments done
+  const total = (c.pago1||0) + (c.pago2||0) + (c.pago3||0);
+  if(total >= 23000 && c.status !== 'disputa') c.status = 'pagado';
+  syncAll();
+  renderDashboard();
 }
 
 function renderMisClientes() {
@@ -908,7 +939,7 @@ function saveClient() {
   const notes = document.getElementById('nc-notes').value;
   const fugas = Number(document.getElementById('nc-fugas').value)||0;
 
-  const newC = {id:'c'+Date.now(),name,phone,tower,team,date,time,notes,fugas,paid8k:false,paidFull:false,status:'pendiente'};
+  const newC = {id:'c'+Date.now(),name,phone,tower,team,date,time,notes,fugas,pago1:0,pago2:0,pago3:0,status:'pendiente'};
   clients.unshift(newC);
   invoices.unshift({id:'f'+Date.now(),client:name,team,type:'cotizacion',amount:23000,paid:0,date:new Date().toISOString().slice(0,10),status:'pendiente',signed:false,waSent:false,desc:notes||'Detección y reparación de fuga'});
 
@@ -925,6 +956,8 @@ function saveClient() {
   btnY.href = base + '&src='+encodeURIComponent(GCAL.yerald)+'&ctz=America/Santo_Domingo';
   btnA.href = base + '&src='+encodeURIComponent(GCAL.alex)+'&ctz=America/Santo_Domingo';
   btnE.style.display = btnY.style.display = btnA.style.display = 'inline-flex';
+  document.getElementById('gcal-buttons-container').style.display = 'block';
+  document.getElementById('form-cliente').style.display = 'none';
 
   syncAll(); renderClients(); renderDashboard();
   showToast('✅ Cliente guardado · Haz clic en los botones de calendario');
